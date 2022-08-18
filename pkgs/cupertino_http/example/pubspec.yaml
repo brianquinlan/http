@@ -15,13 +15,13 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^0.13.5
+  http_client_conformance_tests:
+    path: ../../http_client_conformance_tests/
 
 dev_dependencies:
   flutter_lints: ^2.0.0
   flutter_test:
     sdk: flutter
-  http_client_conformance_tests:
-    path: ../../http_client_conformance_tests/
   integration_test:
     sdk: flutter
   test: ^1.21.1

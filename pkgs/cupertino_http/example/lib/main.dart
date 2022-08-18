@@ -6,9 +6,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cupertino_http/cupertino_client.dart';
+import 'package:cupertino_http/cupertino_http.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:http/io_client.dart';
+import 'package:http_client_conformance_tests/http_client_benchmarks.dart';
 
 void main() {
   late Client client;
@@ -56,47 +58,25 @@ class _HomePageState extends State<HomePage> {
     super.initState();
   }
 
-  void _runSearch(String query) {
-    if (query.isEmpty) {
+  void _runSearch(String query) async {
+    // docker run -d -p 8080:8080 -v $PWD/index.html:/usr/share/caddy/index.html -v caddy_data:/data -v $PWD/Caddyfile:/etc/caddy/Caddyfile caddy
+    // python3 -m timeit --setup 'import urllib.request' 'urllib.request.urlopen("http://localhost:8080/f").read()'
+    final config = URLSessionConfiguration.defaultSessionConfiguration();
+//      ..requestCachePolicy = URLRequestCachePolicy.reloadIgnoringLocalCacheData;
+    await benchmarkAll(() => CupertinoClient.fromSessionConfiguration(config))
+        .listen((x) {
       setState(() {
-        _books = [];
+        _books.add(Book("Cupertino", x.toString(),
+            "http://sweetapp.com/images/britishflag.gif"));
       });
-      return;
-    }
+    }, onError: (e) => print).asFuture();
 
-    // `get` will use the `Client` configured in main.
-    get(Uri.https('www.googleapis.com', '/books/v1/volumes', {
-      'q': query,
-      'maxResults': '40',
-      'printType': 'books'
-    })).then((response) {
-      final books = <Book>[];
-      final jsonPayload = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
-
-      if (jsonPayload['items'] is List<dynamic>) {
-        final items =
-            (jsonPayload['items'] as List).cast<Map<String, Object?>>();
-
-        for (final item in items) {
-          if (item.containsKey('volumeInfo')) {
-            final volumeInfo = item['volumeInfo'] as Map;
-            if (volumeInfo['title'] is String &&
-                volumeInfo['description'] is String &&
-                volumeInfo['imageLinks'] is Map &&
-                (volumeInfo['imageLinks'] as Map)['smallThumbnail'] is String) {
-              books.add(Book(
-                  volumeInfo['title'] as String,
-                  volumeInfo['description'] as String,
-                  (volumeInfo['imageLinks'] as Map)['smallThumbnail']
-                      as String));
-            }
-          }
-        }
-      }
+    await benchmarkAll(IOClient.new).listen((x) {
       setState(() {
-        _books = books;
+        _books.add(Book(
+            "IO", x.toString(), "http://sweetapp.com/images/britishflag.gif"));
       });
-    });
+    }, onError: (e) => print).asFuture();
   }
 
   @override
