@@ -350,6 +350,9 @@ class Data extends _ObjectHolder<ncb.NSData> {
   factory Data.fromData(Data d) =>
       Data._(ncb.NSData.dataWithData_(linkedLibs, d._nsObject));
 
+  factory Data.fromList(List<int> l) =>
+      Data.fromUint8List(Uint8List.fromList(l));
+
   /// A new [Data] object containing the given bytes.
   factory Data.fromUint8List(Uint8List l) {
     final buffer = calloc<Uint8>(l.length);
