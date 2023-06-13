@@ -1,22 +1,19 @@
-// Copyright (c) 2022, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2023, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:stream_channel/stream_channel.dart';
 
-/// Starts an HTTP server that captures the content type header and request
-/// body.
+/// Starts an WebSocket server that echos the payload of the request.
 ///
 /// Channel protocol:
 ///    On Startup:
 ///     - send port
 ///    On Request Received:
-///     - send "Content-Type" header
-///     - send request body
+///     - echoes the request payload
 ///    When Receive Anything:
 ///     - exit
 void hybridMain(StreamChannel<Object?> channel) async {
@@ -24,9 +21,7 @@ void hybridMain(StreamChannel<Object?> channel) async {
 
   server = (await HttpServer.bind('localhost', 0))
     ..transform(WebSocketTransformer()).listen((WebSocket webSocket) {
-      print('Got a connection!');
       webSocket.listen(webSocket.add);
-      print('Done listening!');
     });
 
   channel.sink.add(server.port);

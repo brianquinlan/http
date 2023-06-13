@@ -1,4 +1,4 @@
-// Copyright (c) 2022, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2023, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -9,12 +9,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
-import 'request_body_server_vm.dart'
+import 'echo_server_vm.dart'
     if (dart.library.html) 'request_body_server_web.dart';
 
-/// Tests that the [Client] correctly implements HTTP requests with bodies e.g.
-/// 'POST'.
-void testRequestBody(WebSocketChannel Function(Uri uri) channelFactory) {
+/// Tests that the [WebSocketChannel] can correctly transmit and receive text
+/// and binary payloads.
+void testPayloadTransfer(WebSocketChannel Function(Uri uri) channelFactory) {
   group('request body', () {
     late final Uri uri;
     late final StreamChannel<Object?> httpServerChannel;

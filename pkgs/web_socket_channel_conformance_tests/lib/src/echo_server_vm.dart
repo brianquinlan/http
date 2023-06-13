@@ -2,9 +2,9 @@
 
 import 'package:stream_channel/stream_channel.dart';
 
-import 'request_body_server.dart';
+import 'echo_server.dart';
 
-/// Starts the redirect test HTTP server in the same process.
+/// Starts an WebSocket server that echos the payload of the request.
 Future<StreamChannel<Object?>> startServer() async {
   final controller = StreamChannelController<Object?>(sync: true);
   hybridMain(controller.foreign);

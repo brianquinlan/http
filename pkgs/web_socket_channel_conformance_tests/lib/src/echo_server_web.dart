@@ -3,7 +3,7 @@
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
-/// Starts the redirect test HTTP server out-of-process.
+/// Starts an WebSocket server that echos the payload of the request.
 Future<StreamChannel<Object?>> startServer() async => spawnHybridUri(Uri(
     scheme: 'package',
     path: 'web_socket_channel_conformance_tests/src/request_body_server.dart'));
