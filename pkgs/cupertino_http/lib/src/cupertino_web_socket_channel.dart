@@ -43,6 +43,12 @@ class CupertinoWebSocketChannel extends StreamChannelMixin<dynamic>
   }
 
   void handleError(Object e, StackTrace? st) {
+    if (e is Error) {
+      if (e.code == 57) {
+        // onWebSocketTaskClosed could still be invoked and set the close code.
+        _receivingController.sink.close();
+      }
+    }
     _receivingController.sink.addError(e, st);
   }
 
@@ -90,6 +96,9 @@ class CupertinoWebSocketChannel extends StreamChannelMixin<dynamic>
           print('doing simple cancel');
           _task.cancel();
         }
+        // onWebSocketTaskClosed will only be called if the serve closes the
+        // connection.
+        _receivingController.sink.close();
       }, onError: (e) {});
     });
   }

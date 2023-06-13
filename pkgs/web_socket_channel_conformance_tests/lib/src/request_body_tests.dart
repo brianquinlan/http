@@ -27,6 +27,14 @@ void testRequestBody(WebSocketChannel Function(Uri uri) channelFactory) {
     });
     tearDownAll(() => httpServerChannel.sink.add(null));
 
+    test('close immediately', () async {
+      final channel = channelFactory(uri);
+
+      await expectLater(channel.ready, completes);
+      await channel.sink.close();
+      expect(await channel.stream.isEmpty, true);
+    });
+
     test('empty request and response', () async {
       final channel = channelFactory(uri);
 
@@ -74,7 +82,6 @@ void testRequestBody(WebSocketChannel Function(Uri uri) channelFactory) {
       final channel = channelFactory(uri);
 
       await expectLater(channel.ready, completes);
-      ;
       expect(() => channel.sink.add(const Duration(seconds: 5)),
           throwsArgumentError);
     });

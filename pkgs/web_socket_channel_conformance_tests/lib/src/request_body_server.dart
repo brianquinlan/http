@@ -24,7 +24,9 @@ void hybridMain(StreamChannel<Object?> channel) async {
 
   server = (await HttpServer.bind('localhost', 0))
     ..transform(WebSocketTransformer()).listen((WebSocket webSocket) {
+      print('Got a connection!');
       webSocket.listen(webSocket.add);
+      print('Done listening!');
     });
 
   channel.sink.add(server.port);
