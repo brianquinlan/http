@@ -2,7 +2,7 @@
 
 import 'package:stream_channel/stream_channel.dart';
 
-import 'echo_server.dart';
+import 'close_server.dart';
 
 /// Starts the redirect test HTTP server in the same process.
 Future<StreamChannel<Object?>> startServer() async {

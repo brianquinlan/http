@@ -46,22 +46,36 @@ class CupertinoWebSocketChannel extends StreamChannelMixin<dynamic>
     if (e is Error) {
       if (e.code == 57) {
         // onWebSocketTaskClosed could still be invoked and set the close code.
-        _receivingController.sink.close();
+        // But it would be too late. Might need a timer here?
+//        _receivingController.sink.close();
+        return;
       }
     }
     _receivingController.sink.addError(e, st);
   }
 
-  CupertinoWebSocketChannel._(Uri uri, URLSessionConfiguration config) {
+  CupertinoWebSocketChannel._(Uri uri, URLSessionConfiguration config,
+      {Iterable<String>? protocols}) {
     final session = URLSession.sessionWithConfiguration(
       config,
+      onComplete: (session, task, error) {
+        print('onComplete: $error');
+        if (!_readyCompleter.isCompleted) {
+          if (error != null) {
+            _readyCompleter
+                .completeError(WebSocketChannelException.from(error));
+          } else {
+            _readyCompleter.complete();
+          }
+        }
+      },
       onWebSocketTaskOpened: (session, task, protocol) {
         print('onWebSocketTaskOpened($protocol)');
         _protocol = protocol;
         _readyCompleter.complete();
       },
       onWebSocketTaskClosed: (session, task, code, reason) {
-        print('onWebSocketTaskClosed($closeCode, $reason)');
+        print('onWebSocketTaskClosed($code, $reason)');
         _closeCode = code;
         _closeReason = reason == null ? null : utf8.decode(reason.bytes);
         _receivingController.sink.close();
@@ -99,13 +113,16 @@ class CupertinoWebSocketChannel extends StreamChannelMixin<dynamic>
         // onWebSocketTaskClosed will only be called if the serve closes the
         // connection.
         _receivingController.sink.close();
-      }, onError: (e) {});
-    });
+      } /*, onError: (e) {}*/);
+    }, onError: (e) => null // Nothing to do on errors.
+        );
   }
 
-  factory CupertinoWebSocketChannel.connect(Uri uri) =>
+  factory CupertinoWebSocketChannel.connect(Uri uri,
+          {Iterable<String>? protocols}) =>
       CupertinoWebSocketChannel._(
-          uri, URLSessionConfiguration.defaultSessionConfiguration());
+          uri, URLSessionConfiguration.defaultSessionConfiguration(),
+          protocols: protocols);
 
   int? _localCloseCode;
   String? _localCloseReason;

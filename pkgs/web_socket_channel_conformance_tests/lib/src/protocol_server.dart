@@ -20,8 +20,21 @@ void hybridMain(StreamChannel<Object?> channel) async {
   late HttpServer server;
 
   server = (await HttpServer.bind('localhost', 0))
-    ..transform(WebSocketTransformer())
-        .listen((WebSocket webSocket) => webSocket.listen(webSocket.add));
+    ..listen((request) async {
+      String protocol = request.requestedUri.queryParameters['protocol']!;
+      var receivedProtocols = <String>[];
+
+      final webSocket = await WebSocketTransformer.upgrade(
+        request,
+        protocolSelector: (protocols) {
+          receivedProtocols = protocols;
+          return protocol;
+        },
+      );
+
+      channel.sink.add(receivedProtocols);
+      webSocket.close(4123, 'server closed the connection');
+    });
 
   channel.sink.add(server.port);
   await channel

@@ -62,7 +62,7 @@ void testWebSocketTask() {
         ..resume();
       await task
           .sendMessage(URLSessionWebSocketMessage.fromString('Hello World!'));
-      await task._receiveMessage();
+      await task.receiveMessage();
       task.cancelWithCloseCode(
           4998, Data.fromUint8List(Uint8List.fromList('Bye'.codeUnits)));
 
@@ -81,8 +81,8 @@ void testWebSocketTask() {
         ..resume();
       await task
           .sendMessage(URLSessionWebSocketMessage.fromString('Hello World!'));
-      await task._receiveMessage();
-      await expectLater(task._receiveMessage(),
+      await task.receiveMessage();
+      await expectLater(task.receiveMessage(),
           throwsA(isA<Error>().having((e) => e.code, 'code', 57 // NOT_CONNECTED
               )));
 
@@ -98,7 +98,7 @@ void testWebSocketTask() {
         ..resume();
       await task.sendMessage(URLSessionWebSocketMessage.fromData(
           Data.fromUint8List(Uint8List.fromList([1, 2, 3]))));
-      final receivedMessage = await task._receiveMessage();
+      final receivedMessage = await task.receiveMessage();
       expect(receivedMessage.type,
           URLSessionWebSocketMessageType.urlSessionWebSocketMessageTypeData);
       expect(receivedMessage.data!.bytes, [1, 2, 3]);
@@ -113,7 +113,7 @@ void testWebSocketTask() {
         ..resume();
       await task
           .sendMessage(URLSessionWebSocketMessage.fromString('Hello World!'));
-      final receivedMessage = await task._receiveMessage();
+      final receivedMessage = await task.receiveMessage();
       expect(receivedMessage.type,
           URLSessionWebSocketMessageType.urlSessionWebSocketMessageTypeString);
       expect(receivedMessage.data, null);
@@ -142,8 +142,8 @@ void testWebSocketTask() {
         ..resume();
       await task
           .sendMessage(URLSessionWebSocketMessage.fromString('Hello World!'));
-      await task._receiveMessage();
-      await expectLater(task._receiveMessage(),
+      await task.receiveMessage();
+      await expectLater(task.receiveMessage(),
           throwsA(isA<Error>().having((e) => e.code, 'code', 57 // NOT_CONNECTED
               )));
       task.cancel();
