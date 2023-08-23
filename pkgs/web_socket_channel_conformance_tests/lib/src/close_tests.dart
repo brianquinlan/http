@@ -128,6 +128,7 @@ void testClose(
       expect(await httpServerQueue.next, null);
       expect(channel.closeCode, 4123);
       expect(channel.closeReason, 'server closed the connection');
+      // cancelling should close according to lassa!
     }, skip: _isVM);
 
     test('cancel - client close', () async {
