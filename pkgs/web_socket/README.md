@@ -30,6 +30,7 @@ all pass the same set of
 
 ```dart
 import 'package:web_socket/web_socket.dart';
+import 'dart:typed_data';
 
 void main() async {
   final socket =

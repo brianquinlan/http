@@ -11,10 +11,22 @@ import 'connect_stub.dart'
 /// An event received from the peer through the [WebSocket].
 sealed class WebSocketEvent {}
 
+/// The interface for WebSocket connections.
+///
+/// To handle potential errors, such as a closed connection, you can use a
+/// `try-catch` block to catch the [WebSocketConnectionClosed] exception. This
+/// exception is thrown if you attempt to send data or close the [WebSocket] when
+/// the connection is no longer open.
+///
+/// Example:
+
 /// Text data received from the peer through the [WebSocket].
+///
+/// This event is emitted when the WebSocket receives a text message.
 ///
 /// See [WebSocket.events].
 final class TextDataReceived extends WebSocketEvent {
+  /// The received text data.
   final String text;
   TextDataReceived(this.text);
 
@@ -28,8 +40,11 @@ final class TextDataReceived extends WebSocketEvent {
 
 /// Binary data received from the peer through the [WebSocket].
 ///
+/// This event is emitted when the WebSocket receives a binary message.
+///
 /// See [WebSocket.events].
 final class BinaryDataReceived extends WebSocketEvent {
+  /// The received binary data.
   final Uint8List data;
   BinaryDataReceived(this.data);
 
@@ -54,17 +69,35 @@ final class BinaryDataReceived extends WebSocketEvent {
 /// A close notification (Close frame) received from the peer through the
 /// [WebSocket] or a failure indication.
 ///
+/// This event is emitted when the WebSocket connection is closed, either by the
+/// server or the client.
+///
 /// See [WebSocket.events].
 final class CloseReceived extends WebSocketEvent {
   /// A numerical code indicating the reason why the WebSocket was closed.
   ///
-  /// See [RFC-6455 7.4](https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4)
-  /// for guidance on how to interpret these codes.
+  /// The meaning of the code is defined in
+  /// [RFC-6455 7.4](https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4).
+  /// Common codes include:
+  ///
+  /// - 1000: Normal closure.
+  /// - 1001: Going away.
+  /// - 1002: Protocol error.
+  /// - 1003: Unsupported data.
+  /// - 1005: No status received.
+  /// - 1006: Abnormal closure.
+  /// - 1007: Invalid frame payload data.
+  /// - 1008: Policy violation.
+  /// - 1009: Message too big.
+  /// - 1010: Extension negotiation failed.
+  /// - 1011: Internal server error.
+  /// - 3000-3999: Registered extension codes.
+  /// - 4000-4999: Application specific codes.
   final int? code;
 
   /// A textual explanation of the reason why the WebSocket was closed.
   ///
-  /// Will be empty if the peer did not specify a reason.
+  /// This may be empty if the peer did not specify a reason.
   final String reason;
 
   CloseReceived([this.code, this.reason = '']);
