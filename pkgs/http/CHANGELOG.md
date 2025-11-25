@@ -1,3 +1,7 @@
+## 1.6.1-wip
+
+* Add a note about how browsers control access to HTTP headers.
+
 ## 1.6.0
 
 * **Breaking** Change the behavior of `Request.body` so that a charset
