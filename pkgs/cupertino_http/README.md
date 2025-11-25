@@ -7,7 +7,7 @@ A macOS/iOS Flutter plugin that provides access to the
 ## Motivation
 
 Using the [Foundation URL Loading System][], rather than the socket-based
-[dart:io HttpClient][] implemententation, has several advantages:
+[dart:io HttpClient][] implementation, has several advantages:
 
 1. It automatically supports iOS/macOS platform features such VPNs and HTTP
    proxies. 
@@ -17,56 +17,57 @@ Using the [Foundation URL Loading System][], rather than the socket-based
 
 ## Using
 
-The easiest way to use this library is via the the high-level interface
+The easiest way to use this library is via the high-level interface
 defined by [package:http Client][].
 
 This approach allows the same HTTP code to be used on all platforms, while
 still allowing platform-specific setup.
 
 ```dart
-late Client client;
-if (Platform.isIOS) {
-  final config = URLSessionConfiguration.ephemeralSessionConfiguration()
-    ..allowsCellularAccess = false
-    ..allowsConstrainedNetworkAccess = false
-    ..allowsExpensiveNetworkAccess = false;
-  client = CupertinoClient.fromSessionConfiguration(config);
-} else {
-  client = IOClient(); // Uses an HTTP client based on dart:io
-}
+import 'package:cupertino_http/cupertino_http.dart';
+import 'package:http/http.dart';
+import 'package:http/io_client.dart';
 
-final response = await client.get(Uri.https(
-    'www.googleapis.com',
-    '/books/v1/volumes',
-    {'q': 'HTTP', 'maxResults': '40', 'printType': 'books'}));
+void main() async {
+  final Client httpClient;
+  if (Platform.isIOS || Platform.isMacOS) {
+    final config = URLSessionConfiguration.ephemeralSessionConfiguration()
+      ..cache = URLCache.withCapacity(memoryCapacity: 2 * 1024 * 1024)
+      ..httpAdditionalHeaders = {'User-Agent': 'Book Agent'};
+    httpClient = CupertinoClient.fromSessionConfiguration(config);
+  } else {
+    httpClient = IOClient(HttpClient()..userAgent = 'Book Agent');
+  }
+
+  final response = await httpClient.get(Uri.https(
+      'www.googleapis.com',
+      '/books/v1/volumes',
+      {'q': 'HTTP', 'maxResults': '40', 'printType': 'books'}));
+}
 ```
 
-[package:http runWithClient][] can be used to configure the
-[package:http Client][] for the entire application.
+[CupertinoWebSocket][] provides a [package:web_socket][] [WebSocket][]
+implementation.
 
 ```dart
-void main() {
-  late Client client;
-  if (Platform.isIOS) {
-    client = CupertinoClient.defaultSessionConfiguration();
-  } else {
-    client = IOClient();
-  }
+import 'package:cupertino_http/cupertino_http.dart';
+import 'package:web_socket/web_socket.dart';
 
-  runWithClient(() => runApp(const MyApp()), () => client);
-}
+void main() async {
+  final socket = await CupertinoWebSocket.connect(
+      Uri.parse('wss://ws.postman-echo.com/raw'));
 
-...
-
-class MainPageState extends State<MainPage> {
-  void someMethod() {
-    // Will use the Client configured in main.
-    final response = await get(Uri.https(
-        'www.googleapis.com',
-        '/books/v1/volumes',
-        {'q': 'HTTP', 'maxResults': '40', 'printType': 'books'}));
-  }
-  ...
+  socket.events.listen((e) async {
+    switch (e) {
+      case TextDataReceived(text: final text):
+        print('Received Text: $text');
+        await socket.close();
+      case BinaryDataReceived(data: final data):
+        print('Received Binary: $data');
+      case CloseReceived(code: final code, reason: final reason):
+        print('Connection to server closed: $code [$reason]');
+    }
+  });
 }
 ```
 
@@ -87,7 +88,9 @@ final task = session.dataTaskWithCompletionHandler(URLRequest.fromUrl(url),
 task.resume();
 ```
 
-[package:http Client]: https://pub.dev/documentation/http/latest/http/Client-class.html
-[package:http runWithClient]: https://pub.dev/documentation/http/latest/http/runWithClient.html
-[Foundation URL Loading System]: https://developer.apple.com/documentation/foundation/url_loading_system
+[CupertinoWebSocket]: https://pub.dev/documentation/cupertino_http/latest/cupertino_http/CupertinoWebSocket-class.html
 [dart:io HttpClient]: https://api.dart.dev/stable/dart-io/HttpClient-class.html
+[Foundation URL Loading System]: https://developer.apple.com/documentation/foundation/url_loading_system
+[package:http Client]: https://pub.dev/documentation/http/latest/http/Client-class.html
+[package:web_socket]: https://pub.dev/packages/web_socket
+[WebSocket]: https://pub.dev/documentation/web_socket/latest/web_socket/WebSocket-class.html

@@ -7,6 +7,7 @@ import 'dart:collection';
 import 'package:meta/meta.dart';
 
 import '../http.dart' show ClientException, get;
+import 'abortable.dart';
 import 'base_client.dart';
 import 'base_response.dart';
 import 'byte_stream.dart';
@@ -20,6 +21,10 @@ import 'utils.dart';
 /// [BaseClient.send], which allows the user to provide fine-grained control
 /// over the request properties. However, usually it's easier to use convenience
 /// methods like [get] or [BaseClient.get].
+///
+/// Subclasses/implementers should mixin/implement [Abortable] to support
+/// request cancellation. A future breaking version of 'package:http' will
+/// merge [Abortable] into [BaseRequest], making it a requirement.
 abstract class BaseRequest {
   /// The HTTP method of the request.
   ///
@@ -81,7 +86,13 @@ abstract class BaseRequest {
 
   // TODO(nweiz): automatically parse cookies from headers
 
-  // TODO(nweiz): make this a HttpHeaders object
+  /// The HTTP headers sent to the server.
+  ///
+  /// Header names are converted to lowercase when sent to the server.
+  ///
+  /// Some headers may not be sent by the [Client] for security or privacy
+  /// reasons. For example, browser-based clients may only sent headers in the
+  /// CORS safelist or specifically allowed by the server.
   final Map<String, String> headers;
 
   /// Whether [finalize] has been called.
@@ -132,13 +143,25 @@ abstract class BaseRequest {
     try {
       var response = await client.send(this);
       var stream = onDone(response.stream, client.close);
-      return StreamedResponse(ByteStream(stream), response.statusCode,
-          contentLength: response.contentLength,
-          request: response.request,
-          headers: response.headers,
-          isRedirect: response.isRedirect,
-          persistentConnection: response.persistentConnection,
-          reasonPhrase: response.reasonPhrase);
+
+      if (response case BaseResponseWithUrl(:final url)) {
+        return StreamedResponseV2(ByteStream(stream), response.statusCode,
+            contentLength: response.contentLength,
+            request: response.request,
+            headers: response.headers,
+            isRedirect: response.isRedirect,
+            url: url,
+            persistentConnection: response.persistentConnection,
+            reasonPhrase: response.reasonPhrase);
+      } else {
+        return StreamedResponse(ByteStream(stream), response.statusCode,
+            contentLength: response.contentLength,
+            request: response.request,
+            headers: response.headers,
+            isRedirect: response.isRedirect,
+            persistentConnection: response.persistentConnection,
+            reasonPhrase: response.reasonPhrase);
+      }
     } catch (_) {
       client.close();
       rethrow;

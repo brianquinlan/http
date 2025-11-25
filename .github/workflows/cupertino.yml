@@ -6,14 +6,16 @@ on:
       - main
       - master
     paths:
+      - '.github/workflows/cupertino.yml'
       - 'pkgs/cupertino_http/**'
       - 'pkgs/http_client_conformance_tests/**'
-      - '.github/workflows/cupertino.yml'
+      - 'pkgs/web_socket_conformance_tests/**'
   pull_request:
     paths:
+      - '.github/workflows/cupertino.yml'
       - 'pkgs/cupertino_http/**'
       - 'pkgs/http_client_conformance_tests/**'
-      - '.github/workflows/cupertino.yml'
+      - 'pkgs/web_socket_conformance_tests/**'
   schedule:
     - cron: "0 0 * * 0"
 
@@ -21,67 +23,67 @@ env:
   PUB_ENVIRONMENT: bot.github
 
 jobs:
-  analyze:
-    name: Lint and static analysis
-    runs-on: ubuntu-latest
+  macos:
+    name: "macOS: Format & Analyze & Test"
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: pkgs/cupertino_http
+    strategy:
+      matrix:
+        # Test on the minimum supported flutter version and the latest
+        # version.
+        flutter-version: ["3.32.0", "any"]
+        # It would be nice to test on older versions of macOS but macOS 13 is
+        # the oldest supported by GitHub.
+        os: [macos-13, macos-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e
         with:
+          flutter-version: ${{ matrix.flutter-version }}
           channel: 'stable'
       - id: install
         name: Install dependencies
         run: flutter pub get
       - name: Check formatting
-        # Don't lint the generated file native_cupertino_bindings.dart
-        # This approach is simpler than using `find` and excluding that file
-        # because `dart format` also excludes other file e.g. ones in
-        # directories start with '.'.
-        run: >
-          mv lib/src/native_cupertino_bindings.dart lib/src/native_cupertino_bindings.tmp &&
-          dart format --output=none --set-exit-if-changed . &&
-          mv lib/src/native_cupertino_bindings.tmp lib/src/native_cupertino_bindings.dart
+        run: dart format --output=none --set-exit-if-changed .
         if: always() && steps.install.outcome == 'success'
       - name: Analyze code
         run: flutter analyze --fatal-infos
         if: always() && steps.install.outcome == 'success'
-
-  test:
-    # Test package:cupertino_http use flutter integration tests.
-    needs: analyze
-    name: "Build and test"
-    strategy:
-      matrix:
-        # Test on the minimum supported flutter version and the latest
-        # version.
-        flutter-version: ["3.10.0", "any"]
+      - name: Run tests
+        run: |
+          cd example
+          flutter pub get
+          flutter test -d macos integration_test/main.dart --test-randomize-ordering-seed=random  
+  ios:
+    name: "iOS: Test"
     runs-on: macos-latest
     defaults:
       run:
-        working-directory: pkgs/cupertino_http/example
+        working-directory: pkgs/cupertino_http
+    strategy:
+      fail-fast: false
+      matrix:
+        # Test on the minimum supported flutter version and the latest
+        # version.
+        flutter-version: ["3.32.0", "any"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: futureware-tech/simulator-action@v3
-        with:
-          model: 'iPhone 8'
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e
         with:
           flutter-version: ${{ matrix.flutter-version }}
           channel: 'stable'
+      - id: install
+        name: Install dependencies
+        run: flutter pub get
+      - uses: futureware-tech/simulator-action@dab10d813144ef59b48d401cd95da151222ef8cd
+        with:
+          os: iOS
+          os_version: '>=13.0'
       - name: Run tests
-        # TODO: Remove the retries when
-        # https://github.com/flutter/flutter/issues/121231 is fixed.
-        # See https://github.com/dart-lang/http/issues/938 for context.
         run: |
-          for i in {1..6}
-          do
-            flutter test integration_test/main.dart && break
-            if [ $i -eq 6 ]
-            then
-              exit 1
-            fi
-            echo "Retry $i"
-          done
+          cd example
+          flutter pub get
+          flutter test integration_test/main.dart --test-randomize-ordering-seed=random

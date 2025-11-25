@@ -9,8 +9,7 @@ A Flutter sample app that illustrates how to configure and use
   including:
 
     * configuration for multiple platforms.
-    * using `runWithClient` and `package:provider` to pass `Client`s through
-      an application.
+    * using `package:provider` to pass `Client`s through an application.
     * writing tests using `MockClient`.
 
 ## The important bits
@@ -25,7 +24,7 @@ the Dart virtual machine, meaning all platforms except the web browser.
 This library used to create `package:http` `Client`s when the app is run inside
 a web browser.
 
-Web configuration must be done in a seperate library because Dart code cannot
+Web configuration must be done in a separate library because Dart code cannot
 import `dart:ffi` or `dart:io` when run in a web browser.
 
 ### `main.dart`
@@ -34,9 +33,8 @@ This library demonstrates how to:
 
 * import `http_client_factory.dart` or `http_client_factory_web.dart`,
   depending on whether we are targeting the web browser or not.
-* share a `package:http` `Client` by using `runWithClient` and
-  `package:provider`.
-* call `package:http` functions.
+* share a `package:http` `Client` by using `package:provider`.
+* call `package:http` `Client` methods.
 
 ### `widget_test.dart`
 

@@ -8,9 +8,10 @@ import 'dart:io';
 
 import 'package:cupertino_http/cupertino_http.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:objective_c/objective_c.dart';
 import 'package:test/test.dart';
 
-void testOnComplete(URLSessionConfiguration config) {
+void testOnComplete(URLSessionConfiguration Function() config) {
   group('onComplete', () {
     late HttpServer server;
 
@@ -29,59 +30,66 @@ void testOnComplete(URLSessionConfiguration config) {
 
     test('success', () async {
       final c = Completer<void>();
-      Error? actualError;
+      NSError? actualError;
       late URLSession actualSession;
       late URLSessionTask actualTask;
 
-      final session =
-          URLSession.sessionWithConfiguration(config, onComplete: (s, t, e) {
-        actualSession = s;
-        actualTask = t;
-        actualError = e;
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onComplete: (s, t, e) {
+          actualSession = s;
+          actualTask = t;
+          actualError = e;
+          c.complete();
+        },
+      );
 
       final task = session.dataTaskWithRequest(
-          URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')))
-        ..resume();
+        URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')),
+      )..resume();
       await c.future;
 
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualError, null);
+      session.finishTasksAndInvalidate();
     });
 
     test('bad host', () async {
       final c = Completer<void>();
-      Error? actualError;
+      NSError? actualError;
       late URLSession actualSession;
       late URLSessionTask actualTask;
 
-      final session =
-          URLSession.sessionWithConfiguration(config, onComplete: (s, t, e) {
-        actualSession = s;
-        actualTask = t;
-        actualError = e;
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onComplete: (s, t, e) {
+          actualSession = s;
+          actualTask = t;
+          actualError = e;
+          c.complete();
+        },
+      );
 
       final task = session.dataTaskWithRequest(
-          URLRequest.fromUrl(Uri.https('does-not-exist', '')))
-        ..resume();
+        URLRequest.fromUrl(Uri.https('does-not-exist', '')),
+      )..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(
-          actualError!.code,
-          anyOf(
-            -1001, // kCFURLErrorTimedOut
-            -1003, // kCFURLErrorCannotFindHost
-          ));
+        actualError!.code,
+        anyOf(
+          -1001, // kCFURLErrorTimedOut
+          -1003, // kCFURLErrorCannotFindHost
+        ),
+      );
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnResponse(URLSessionConfiguration config) {
+void testOnResponse(URLSessionConfiguration Function() config) {
   group('onResponse', () {
     late HttpServer server;
 
@@ -104,22 +112,25 @@ void testOnResponse(URLSessionConfiguration config) {
       late URLSession actualSession;
       late URLSessionTask actualTask;
 
-      final session =
-          URLSession.sessionWithConfiguration(config, onResponse: (s, t, r) {
-        actualSession = s;
-        actualTask = t;
-        actualResponse = r as HTTPURLResponse;
-        c.complete();
-        return URLSessionResponseDisposition.urlSessionResponseAllow;
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onResponse: (s, t, r) {
+          actualSession = s;
+          actualTask = t;
+          actualResponse = r as HTTPURLResponse;
+          c.complete();
+          return NSURLSessionResponseDisposition.NSURLSessionResponseAllow;
+        },
+      );
 
       final task = session.dataTaskWithRequest(
-          URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')))
-        ..resume();
+        URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')),
+      )..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualResponse.statusCode, 200);
+      session.finishTasksAndInvalidate();
     });
 
     test('bad host', () async {
@@ -127,24 +138,28 @@ void testOnResponse(URLSessionConfiguration config) {
       final c = Completer<void>();
       var called = false;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onComplete: (session, task, error) => c.complete(),
-          onResponse: (s, t, r) {
-            called = true;
-            return URLSessionResponseDisposition.urlSessionResponseAllow;
-          });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onComplete: (session, task, error) => c.complete(),
+        onResponse: (s, t, r) {
+          called = true;
+          return NSURLSessionResponseDisposition.NSURLSessionResponseAllow;
+        },
+      );
 
       session
           .dataTaskWithRequest(
-              URLRequest.fromUrl(Uri.https('does-not-exist', '')))
+            URLRequest.fromUrl(Uri.https('does-not-exist', '')),
+          )
           .resume();
       await c.future;
       expect(called, false);
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnData(URLSessionConfiguration config) {
+void testOnData(URLSessionConfiguration Function() config) {
   group('onData', () {
     late HttpServer server;
 
@@ -163,30 +178,33 @@ void testOnData(URLSessionConfiguration config) {
 
     test('success', () async {
       final c = Completer<void>();
-      final actualData = MutableData.empty();
+      final actualData = NSMutableData.data();
       late URLSession actualSession;
       late URLSessionTask actualTask;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onComplete: (s, t, r) => c.complete(),
-          onData: (s, t, d) {
-            actualSession = s;
-            actualTask = t;
-            actualData.appendBytes(d.bytes);
-          });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onComplete: (s, t, r) => c.complete(),
+        onData: (s, t, d) {
+          actualSession = s;
+          actualTask = t;
+          actualData.appendData(d);
+        },
+      );
 
       final task = session.dataTaskWithRequest(
-          URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')))
-        ..resume();
+        URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')),
+      )..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
-      expect(actualData.bytes, 'Hello World'.codeUnits);
+      expect(actualData.toList(), 'Hello World'.codeUnits);
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnFinishedDownloading(URLSessionConfiguration config) {
+void testOnFinishedDownloading(URLSessionConfiguration Function() config) {
   group('onFinishedDownloading', () {
     late HttpServer server;
 
@@ -209,26 +227,29 @@ void testOnFinishedDownloading(URLSessionConfiguration config) {
       late URLSessionDownloadTask actualTask;
       late String actualContent;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onComplete: (s, t, r) => c.complete(),
-          onFinishedDownloading: (s, t, uri) {
-            actualSession = s;
-            actualTask = t;
-            actualContent = File.fromUri(uri).readAsStringSync();
-          });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onComplete: (s, t, r) => c.complete(),
+        onFinishedDownloading: (s, t, uri) {
+          actualSession = s;
+          actualTask = t;
+          actualContent = File.fromUri(uri).readAsStringSync();
+        },
+      );
 
       final task = session.downloadTaskWithRequest(
-          URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')))
-        ..resume();
+        URLRequest.fromUrl(Uri.parse('http://localhost:${server.port}')),
+      )..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualContent, 'Hello World');
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnRedirect(URLSessionConfiguration config) {
+void testOnRedirect(URLSessionConfiguration Function() config) {
   group('onRedirect', () {
     late HttpServer redirectServer;
 
@@ -247,8 +268,11 @@ void testOnRedirect(URLSessionConfiguration config) {
           } else {
             final n = int.parse(request.requestedUri.pathSegments.last);
             final nextPath = n - 1 == 0 ? '' : '${n - 1}';
-            unawaited(request.response.redirect(Uri.parse(
-                'http://localhost:${redirectServer.port}/$nextPath')));
+            unawaited(
+              request.response.redirect(
+                Uri.parse('http://localhost:${redirectServer.port}/$nextPath'),
+              ),
+            );
           }
         });
     });
@@ -257,186 +281,227 @@ void testOnRedirect(URLSessionConfiguration config) {
     });
 
     test('disallow redirect', () async {
-      final session = URLSession.sessionWithConfiguration(config,
-          onRedirect:
-              (redirectSession, redirectTask, redirectResponse, newRequest) =>
-                  null);
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onRedirect:
+            (redirectSession, redirectTask, redirectResponse, newRequest) =>
+                null,
+      );
       final c = Completer<void>();
-      HTTPURLResponse? response;
-      Error? error;
+      URLResponse? response;
+      NSError? error;
 
       session.dataTaskWithCompletionHandler(
-          URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/100')),
-          (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
+        URLRequest.fromUrl(
+          Uri.parse('http://localhost:${redirectServer.port}/100'),
+        ),
+        (d, r, e) {
+          response = r;
+          error = e;
+          c.complete();
+        },
+      ).resume();
       await c.future;
 
-      expect(response!.statusCode, 302);
-      expect(response!.allHeaderFields['Location'],
-          'http://localhost:${redirectServer.port}/99');
+      expect(
+        response,
+        isA<HTTPURLResponse>()
+            .having((r) => r.statusCode, 'statusCode', 302)
+            .having(
+              (r) => r.allHeaderFields['Location'],
+              "allHeaderFields['Location']",
+              'http://localhost:${redirectServer.port}/99',
+            ),
+      );
       expect(error, null);
+      session.finishTasksAndInvalidate();
     });
 
-    test('use preposed redirect request', () async {
-      final session = URLSession.sessionWithConfiguration(config,
-          onRedirect:
-              (redirectSession, redirectTask, redirectResponse, newRequest) =>
-                  newRequest);
+    test('use proposed redirect request', () async {
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onRedirect:
+            (redirectSession, redirectTask, redirectResponse, newRequest) =>
+                newRequest,
+      );
       final c = Completer<void>();
-      HTTPURLResponse? response;
-      Error? error;
+      URLResponse? response;
+      NSError? error;
 
       session.dataTaskWithCompletionHandler(
-          URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/1')),
-          (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
+        URLRequest.fromUrl(
+          Uri.parse('http://localhost:${redirectServer.port}/1'),
+        ),
+        (d, r, e) {
+          response = r;
+          error = e;
+          c.complete();
+        },
+      ).resume();
       await c.future;
 
-      expect(response!.statusCode, 200);
+      expect(
+        response,
+        isA<HTTPURLResponse>().having((r) => r.statusCode, 'statusCode', 200),
+      );
       expect(error, null);
+      session.finishTasksAndInvalidate();
     });
 
     test('use custom redirect request', () async {
       final session = URLSession.sessionWithConfiguration(
-        config,
-        onRedirect: (redirectSession, redirectTask, redirectResponse,
-                newRequest) =>
-            URLRequest.fromUrl(
-                Uri.parse('http://localhost:${redirectServer.port}/')),
+        config(),
+        onRedirect:
+            (redirectSession, redirectTask, redirectResponse, newRequest) =>
+                URLRequest.fromUrl(
+                  Uri.parse('http://localhost:${redirectServer.port}/'),
+                ),
       );
       final c = Completer<void>();
-      HTTPURLResponse? response;
-      Error? error;
+      URLResponse? response;
+      NSError? error;
 
       session.dataTaskWithCompletionHandler(
-          URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/100')),
-          (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
+        URLRequest.fromUrl(
+          Uri.parse('http://localhost:${redirectServer.port}/100'),
+        ),
+        (d, r, e) {
+          response = r;
+          error = e;
+          c.complete();
+        },
+      ).resume();
       await c.future;
 
-      expect(response!.statusCode, 200);
+      expect(
+        response,
+        isA<HTTPURLResponse>().having((r) => r.statusCode, 'statusCode', 200),
+      );
       expect(error, null);
+      session.finishTasksAndInvalidate();
     });
 
-    test('exception in http redirection', () async {
-      final session = URLSession.sessionWithConfiguration(
-        config,
-        onRedirect:
-            (redirectSession, redirectTask, redirectResponse, newRequest) {
-          throw UnimplementedError();
-        },
-      );
-      final c = Completer<void>();
-      HTTPURLResponse? response;
-      // ignore: unused_local_variable
-      Error? error;
+    test(
+      'exception in http redirection',
+      () async {
+        final session = URLSession.sessionWithConfiguration(
+          config(),
+          onRedirect:
+              (redirectSession, redirectTask, redirectResponse, newRequest) {
+                throw UnimplementedError();
+              },
+        );
+        final c = Completer<void>();
+        URLResponse? response;
+        // ignore: unused_local_variable
+        NSError? error;
 
-      session.dataTaskWithCompletionHandler(
+        session.dataTaskWithCompletionHandler(
           URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/100')),
+            Uri.parse('http://localhost:${redirectServer.port}/100'),
+          ),
           (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
-      await c.future;
+            response = r;
+            error = e;
+            c.complete();
+          },
+        ).resume();
+        await c.future;
 
-      expect(response!.statusCode, 302);
-      // TODO(https://github.com/dart-lang/ffigen/issues/386): Check that the
-      // error is set.
-    }, skip: 'Error not set for redirect exceptions.');
+        expect(
+          response,
+          isA<HTTPURLResponse>().having((r) => r.statusCode, 'statusCode', 302),
+        );
+        // TODO(https://github.com/dart-lang/ffigen/issues/386): Check that the
+        // error is set.
+        session.finishTasksAndInvalidate();
+      },
+      skip: 'Error not set for redirect exceptions.',
+    );
 
     test('3 redirects', () async {
       var redirectCounter = 0;
       final session = URLSession.sessionWithConfiguration(
-        config,
+        config(),
         onRedirect:
             (redirectSession, redirectTask, redirectResponse, newRequest) {
-          expect(redirectResponse.statusCode, 302);
-          switch (redirectCounter) {
-            case 0:
-              expect(redirectResponse.allHeaderFields['Location'],
-                  'http://localhost:${redirectServer.port}/2');
-              expect(newRequest.url,
-                  Uri.parse('http://localhost:${redirectServer.port}/2'));
-              break;
-            case 1:
-              expect(redirectResponse.allHeaderFields['Location'],
-                  'http://localhost:${redirectServer.port}/1');
-              expect(newRequest.url,
-                  Uri.parse('http://localhost:${redirectServer.port}/1'));
-              break;
-            case 2:
-              expect(redirectResponse.allHeaderFields['Location'],
-                  'http://localhost:${redirectServer.port}/');
-              expect(newRequest.url,
-                  Uri.parse('http://localhost:${redirectServer.port}/'));
-              break;
-          }
-          ++redirectCounter;
-          return newRequest;
-        },
+              ++redirectCounter;
+              return newRequest;
+            },
       );
       final c = Completer<void>();
-      HTTPURLResponse? response;
-      Error? error;
+      URLResponse? response;
+      NSError? error;
 
       session.dataTaskWithCompletionHandler(
-          URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/3')),
-          (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
+        URLRequest.fromUrl(
+          Uri.parse('http://localhost:${redirectServer.port}/3'),
+        ),
+        (d, r, e) {
+          response = r;
+          error = e;
+          c.complete();
+        },
+      ).resume();
       await c.future;
 
-      expect(response!.statusCode, 200);
+      expect(redirectCounter, 3);
+      expect(
+        response,
+        isA<HTTPURLResponse>().having((r) => r.statusCode, 'statusCode', 200),
+      );
       expect(error, null);
+      session.finishTasksAndInvalidate();
     });
 
     test('allow too many redirects', () async {
       // The Foundation URL Loading System limits the number of redirects
       // even when a redirect delegate is present and allows the redirect.
       final session = URLSession.sessionWithConfiguration(
-        config,
+        config(),
         onRedirect:
             (redirectSession, redirectTask, redirectResponse, newRequest) =>
                 newRequest,
       );
       final c = Completer<void>();
-      HTTPURLResponse? response;
-      Error? error;
+      URLResponse? response;
+      NSError? error;
 
       session.dataTaskWithCompletionHandler(
-          URLRequest.fromUrl(
-              Uri.parse('http://localhost:${redirectServer.port}/100')),
-          (d, r, e) {
-        response = r;
-        error = e;
-        c.complete();
-      }).resume();
+        URLRequest.fromUrl(
+          Uri.parse('http://localhost:${redirectServer.port}/100'),
+        ),
+        (d, r, e) {
+          response = r;
+          error = e;
+          c.complete();
+        },
+      ).resume();
       await c.future;
 
-      expect(response, null);
+      expect(
+        response,
+        anyOf(
+          isNull,
+          isA<HTTPURLResponse>()
+              .having((r) => r.statusCode, 'statusCode', 302)
+              .having(
+                (r) => r.allHeaderFields['Location'],
+                "r.allHeaderFields['Location']",
+                matches(
+                  'http://localhost:${redirectServer.port}/'
+                  r'\d+',
+                ),
+              ),
+        ),
+      );
       expect(error!.code, -1007); // kCFURLErrorHTTPTooManyRedirects
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnWebSocketTaskOpened(URLSessionConfiguration config) {
+void testOnWebSocketTaskOpened(URLSessionConfiguration Function() config) {
   group('onWebSocketTaskOpened', () {
     late HttpServer server;
 
@@ -465,23 +530,26 @@ void testOnWebSocketTaskOpened(URLSessionConfiguration config) {
       late URLSession actualSession;
       late URLSessionWebSocketTask actualTask;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (s, t, p) {
-        actualSession = s;
-        actualTask = t;
-        actualProtocol = p;
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (s, t, p) {
+          actualSession = s;
+          actualTask = t;
+          actualProtocol = p;
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}'))
-        ..setValueForHttpHeaderField('Sec-WebSocket-Protocol', 'myprotocol');
+        Uri.parse('http://localhost:${server.port}'),
+      )..setValueForHttpHeaderField('Sec-WebSocket-Protocol', 'myprotocol');
 
       final task = session.webSocketTaskWithRequest(request)..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualProtocol, 'myprotocol');
+      session.finishTasksAndInvalidate();
     });
 
     test('without protocol', () async {
@@ -490,45 +558,56 @@ void testOnWebSocketTaskOpened(URLSessionConfiguration config) {
       late URLSession actualSession;
       late URLSessionWebSocketTask actualTask;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (s, t, p) {
-        actualSession = s;
-        actualTask = t;
-        actualProtocol = p;
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (s, t, p) {
+          actualSession = s;
+          actualTask = t;
+          actualProtocol = p;
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}'));
+        Uri.parse('http://localhost:${server.port}'),
+      );
       final task = session.webSocketTaskWithRequest(request)..resume();
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualProtocol, null);
+      session.finishTasksAndInvalidate();
     });
 
     test('server failure', () async {
       final c = Completer<void>();
       var onWebSocketTaskOpenedCalled = false;
+      NSError? actualError;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (s, t, p) {
-        onWebSocketTaskOpenedCalled = true;
-      }, onComplete: (s, t, e) {
-        expect(e, isNotNull);
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (s, t, p) {
+          onWebSocketTaskOpenedCalled = true;
+        },
+        onComplete: (s, t, e) {
+          actualError = e;
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}?error=1'));
+        Uri.parse('http://localhost:${server.port}?error=1'),
+      );
       session.webSocketTaskWithRequest(request).resume();
       await c.future;
+      expect(actualError, isNotNull);
       expect(onWebSocketTaskOpenedCalled, false);
+      session.finishTasksAndInvalidate();
     });
   });
 }
 
-void testOnWebSocketTaskClosed(URLSessionConfiguration config) {
+void testOnWebSocketTaskClosed(URLSessionConfiguration Function() config) {
   group('testOnWebSocketTaskClosed', () {
     late HttpServer server;
     late int? serverCode;
@@ -542,9 +621,7 @@ void testOnWebSocketTaskClosed(URLSessionConfiguration config) {
             unawaited(request.response.close());
             return;
           }
-          final webSocket = await WebSocketTransformer.upgrade(
-            request,
-          );
+          final webSocket = await WebSocketTransformer.upgrade(request);
           await webSocket.close(serverCode, serverReason);
         });
     });
@@ -562,31 +639,40 @@ void testOnWebSocketTaskClosed(URLSessionConfiguration config) {
       serverCode = null;
       serverReason = null;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (session, task, protocol) {},
-          onWebSocketTaskClosed: (session, task, closeCode, reason) {
-        actualSession = session;
-        actualTask = task;
-        actualCloseCode = closeCode!;
-        actualReason = utf8.decode(reason!.bytes);
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (session, task, protocol) {},
+        onWebSocketTaskClosed: (session, task, closeCode, reason) {
+          actualSession = session;
+          actualTask = task;
+          actualCloseCode = closeCode!;
+          actualReason = utf8.decode(reason!.toList());
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}'));
+        Uri.parse('http://localhost:${server.port}'),
+      );
 
       final task = session.webSocketTaskWithRequest(request)..resume();
 
       expect(
-          task.receiveMessage(),
-          throwsA(isA<Error>()
-              .having((e) => e.code, 'code', 57 // Socket is not connected.
-                  )));
+        task.receiveMessage(),
+        throwsA(
+          isA<NSError>().having(
+            (e) => e.code,
+            'code',
+            57, // Socket is not connected.
+          ),
+        ),
+      );
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualCloseCode, 1005);
       expect(actualReason, '');
+      session.finishTasksAndInvalidate();
     });
 
     test('close code', () async {
@@ -599,31 +685,40 @@ void testOnWebSocketTaskClosed(URLSessionConfiguration config) {
       serverCode = 4000;
       serverReason = null;
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (session, task, protocol) {},
-          onWebSocketTaskClosed: (session, task, closeCode, reason) {
-        actualSession = session;
-        actualTask = task;
-        actualCloseCode = closeCode!;
-        actualReason = utf8.decode(reason!.bytes);
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (session, task, protocol) {},
+        onWebSocketTaskClosed: (session, task, closeCode, reason) {
+          actualSession = session;
+          actualTask = task;
+          actualCloseCode = closeCode!;
+          actualReason = utf8.decode(reason!.toList());
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}'));
+        Uri.parse('http://localhost:${server.port}'),
+      );
 
       final task = session.webSocketTaskWithRequest(request)..resume();
 
       expect(
-          task.receiveMessage(),
-          throwsA(isA<Error>()
-              .having((e) => e.code, 'code', 57 // Socket is not connected.
-                  )));
+        task.receiveMessage(),
+        throwsA(
+          isA<NSError>().having(
+            (e) => e.code,
+            'code',
+            57, // Socket is not connected.
+          ),
+        ),
+      );
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualCloseCode, serverCode);
       expect(actualReason, '');
+      session.finishTasksAndInvalidate();
     });
 
     test('close code and reason', () async {
@@ -636,31 +731,40 @@ void testOnWebSocketTaskClosed(URLSessionConfiguration config) {
       serverCode = 4000;
       serverReason = 'no real reason';
 
-      final session = URLSession.sessionWithConfiguration(config,
-          onWebSocketTaskOpened: (session, task, protocol) {},
-          onWebSocketTaskClosed: (session, task, closeCode, reason) {
-        actualSession = session;
-        actualTask = task;
-        actualCloseCode = closeCode!;
-        actualReason = utf8.decode(reason!.bytes);
-        c.complete();
-      });
+      final session = URLSession.sessionWithConfiguration(
+        config(),
+        onWebSocketTaskOpened: (session, task, protocol) {},
+        onWebSocketTaskClosed: (session, task, closeCode, reason) {
+          actualSession = session;
+          actualTask = task;
+          actualCloseCode = closeCode!;
+          actualReason = utf8.decode(reason!.toList());
+          c.complete();
+        },
+      );
 
       final request = MutableURLRequest.fromUrl(
-          Uri.parse('http://localhost:${server.port}'));
+        Uri.parse('http://localhost:${server.port}'),
+      );
 
       final task = session.webSocketTaskWithRequest(request)..resume();
 
       expect(
-          task.receiveMessage(),
-          throwsA(isA<Error>()
-              .having((e) => e.code, 'code', 57 // Socket is not connected.
-                  )));
+        task.receiveMessage(),
+        throwsA(
+          isA<NSError>().having(
+            (e) => e.code,
+            'code',
+            57, // Socket is not connected.
+          ),
+        ),
+      );
       await c.future;
       expect(actualSession, session);
       expect(actualTask, task);
       expect(actualCloseCode, serverCode);
       expect(actualReason, serverReason);
+      session.finishTasksAndInvalidate();
     });
   });
 }
@@ -669,10 +773,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('backgroundSession', () {
-    final config =
-        URLSessionConfiguration.backgroundSession('backgroundSession');
+    var count = 0;
+    URLSessionConfiguration config() {
+      ++count;
+      return URLSessionConfiguration.backgroundSession(
+        'backgroundSession{$count}',
+      );
+    }
+
     testOnComplete(config);
-    testOnResponse(config);
+    // onResponse is not called for background sessions.
     testOnData(config);
     // onRedirect is not called for background sessions.
     testOnFinishedDownloading(config);
@@ -680,7 +790,8 @@ void main() {
   });
 
   group('defaultSessionConfiguration', () {
-    final config = URLSessionConfiguration.defaultSessionConfiguration();
+    URLSessionConfiguration config() =>
+        URLSessionConfiguration.defaultSessionConfiguration();
     testOnComplete(config);
     testOnResponse(config);
     testOnData(config);
@@ -691,7 +802,8 @@ void main() {
   });
 
   group('ephemeralSessionConfiguration', () {
-    final config = URLSessionConfiguration.ephemeralSessionConfiguration();
+    URLSessionConfiguration config() =>
+        URLSessionConfiguration.ephemeralSessionConfiguration();
     testOnComplete(config);
     testOnResponse(config);
     testOnData(config);

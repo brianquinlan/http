@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+
+import 'abortable.dart';
 import 'base_client.dart';
 import 'base_request.dart';
 import 'byte_stream.dart';
@@ -9,6 +12,11 @@ import 'request.dart';
 import 'response.dart';
 import 'streamed_request.dart';
 import 'streamed_response.dart';
+
+final _pngImageData = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDw'
+  'AEhQGAhKmMIQAAAABJRU5ErkJggg==',
+);
 
 // TODO(nweiz): once Dart has some sort of Rack- or WSGI-like standard for
 // server APIs, MockClient should conform to it.
@@ -19,6 +27,10 @@ import 'streamed_response.dart';
 /// This client allows you to define a handler callback for all requests that
 /// are made through it so that you can mock a server without having to send
 /// real HTTP requests.
+///
+/// This client does not support aborting requests directly - it is the
+/// handler's responsibility to throw [RequestAbortedException] as and when
+/// necessary.
 class MockClient extends BaseClient {
   /// The handler for receiving [StreamedRequest]s and sending
   /// [StreamedResponse]s.
@@ -68,6 +80,17 @@ class MockClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     var bodyStream = request.finalize();
     return await _handler(request, bodyStream);
+  }
+
+  /// Return a response containing a PNG image.
+  static Response pngResponse({BaseRequest? request}) {
+    final headers = {
+      'content-type': 'image/png',
+      'content-length': '${_pngImageData.length}'
+    };
+
+    return Response.bytes(_pngImageData, 200,
+        request: request, headers: headers, reasonPhrase: 'OK');
   }
 }
 

@@ -5,19 +5,33 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cupertino_http/cupertino_http.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:http/io_client.dart';
+import 'package:http_image_provider/http_image_provider.dart';
+import 'package:provider/provider.dart';
 
 import 'book.dart';
 
 void main() {
-  var clientFactory = Client.new; // The default Client.
+  final Client httpClient;
   if (Platform.isIOS || Platform.isMacOS) {
-    clientFactory = CupertinoClient.defaultSessionConfiguration.call;
+    final config = URLSessionConfiguration.ephemeralSessionConfiguration()
+      ..cache = URLCache.withCapacity(memoryCapacity: 2 * 1024 * 1024)
+      ..httpAdditionalHeaders = {'User-Agent': 'Book Agent'};
+    httpClient = CupertinoClient.fromSessionConfiguration(config);
+  } else {
+    httpClient = IOClient(HttpClient()..userAgent = 'Book Agent');
   }
-  runWithClient(() => runApp(const BookSearchApp()), clientFactory);
+
+  runApp(
+    Provider<Client>(
+      create: (_) => httpClient,
+      child: const BookSearchApp(),
+      dispose: (_, client) => client.close(),
+    ),
+  );
 }
 
 class BookSearchApp extends StatelessWidget {
@@ -25,11 +39,11 @@ class BookSearchApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const MaterialApp(
-        // Remove the debug banner.
-        debugShowCheckedModeBanner: false,
-        title: 'Book Search',
-        home: HomePage(),
-      );
+    // Remove the debug banner.
+    debugShowCheckedModeBanner: false,
+    title: 'Book Search',
+    home: HomePage(),
+  );
 }
 
 class HomePage extends StatefulWidget {
@@ -42,21 +56,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Book>? _books;
   String? _lastQuery;
+  late Client _client;
 
   @override
   void initState() {
     super.initState();
+    _client = context.read<Client>();
   }
 
   // Get the list of books matching `query`.
-  // The `get` call will automatically use the `client` configurated in `main`.
+  // The `get` call will automatically use the `client` configured in `main`.
   Future<List<Book>> _findMatchingBooks(String query) async {
-    final response = await get(
-      Uri.https(
-        'www.googleapis.com',
-        '/books/v1/volumes',
-        {'q': query, 'maxResults': '40', 'printType': 'books'},
-      ),
+    final response = await _client.get(
+      Uri.https('www.googleapis.com', '/books/v1/volumes', {
+        'q': query,
+        'maxResults': '20',
+        'printType': 'books',
+      }),
     );
 
     final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
@@ -86,8 +102,8 @@ class _HomePageState extends State<HomePage> {
     final searchResult = _books == null
         ? const Text('Please enter a query', style: TextStyle(fontSize: 24))
         : _books!.isNotEmpty
-            ? BookList(_books!)
-            : const Text('No results found', style: TextStyle(fontSize: 24));
+        ? BookList(_books!)
+        : const Text('No results found', style: TextStyle(fontSize: 24));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Book Search')),
@@ -123,18 +139,19 @@ class BookList extends StatefulWidget {
 class _BookListState extends State<BookList> {
   @override
   Widget build(BuildContext context) => ListView.builder(
-        itemCount: widget.books.length,
-        itemBuilder: (context, index) => Card(
-          key: ValueKey(widget.books[index].title),
-          child: ListTile(
-            leading: CachedNetworkImage(
-                placeholder: (context, url) =>
-                    const CircularProgressIndicator(),
-                imageUrl:
-                    widget.books[index].imageUrl.replaceFirst('http', 'https')),
-            title: Text(widget.books[index].title),
-            subtitle: Text(widget.books[index].description),
+    itemCount: widget.books.length,
+    itemBuilder: (context, index) => Card(
+      key: ValueKey(widget.books[index].title),
+      child: ListTile(
+        leading: Image(
+          image: HttpImageProvider(
+            widget.books[index].imageUrl.replace(scheme: 'https'),
+            client: context.read<Client>(),
           ),
         ),
-      );
+        title: Text(widget.books[index].title),
+        subtitle: Text(widget.books[index].description),
+      ),
+    ),
+  );
 }
