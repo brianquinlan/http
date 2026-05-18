@@ -399,7 +399,7 @@ class CupertinoClient extends BaseClient {
         throw ClientException('Redirect limit exceeded', request.url);
       }
 
-      final responseHeaders = _getResponseHeaders(response, request);
+      final responseHeaders = _responseHeaders(response, request);
       final contentLength = response.expectedContentLength == -1
           ? null
           : response.expectedContentLength;
@@ -430,7 +430,7 @@ class CupertinoClient extends BaseClient {
     }
   }
 
-  Map<String, String> _getResponseHeaders(
+  Map<String, String> _responseHeaders(
     HTTPURLResponse response,
     BaseRequest request,
   ) {
