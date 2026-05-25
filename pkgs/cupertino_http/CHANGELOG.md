@@ -1,4 +1,4 @@
-## 3.0.0-wip
+## 3.0.0
 
 * **BREAKING CHANGE:** Remove `shouldUseExtendedBackgroundIdleMode` from
   `URLSessionConfiguration`.
