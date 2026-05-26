@@ -1,3 +1,7 @@
+## 3.0.1-wip
+
+* Fix some code examples.
+
 ## 3.0.0
 
 * **BREAKING CHANGE:** Remove `shouldUseExtendedBackgroundIdleMode` from
