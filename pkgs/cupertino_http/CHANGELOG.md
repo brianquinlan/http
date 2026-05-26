@@ -1,3 +1,7 @@
+## 3.0.1-wip
+
+* Remove `README.md` text saying that the package is a Flutter plugin.
+
 ## 3.0.0
 
 * **BREAKING CHANGE:** Remove `shouldUseExtendedBackgroundIdleMode` from
