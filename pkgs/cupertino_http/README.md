@@ -1,7 +1,7 @@
 [![pub package](https://img.shields.io/pub/v/cupertino_http.svg)](https://pub.dev/packages/cupertino_http)
 [![package publisher](https://img.shields.io/pub/publisher/cupertino_http.svg)](https://pub.dev/packages/cupertino_http/publisher)
 
-A macOS/iOS Flutter plugin that provides access to the
+A macOS/iOS library that provides access to the
 [Foundation URL Loading System][].
 
 ## Motivation
