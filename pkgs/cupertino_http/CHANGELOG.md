@@ -1,3 +1,9 @@
+## 3.0.1
+
+* Fix a [bug](https://github.com/dart-lang/http/issues/1925) where native
+  assets were built on non-Apple platforms.
+* Support the latest semver-major versions of the native assets packages.
+
 ## 3.0.0
 
 * **BREAKING CHANGE:** Remove `shouldUseExtendedBackgroundIdleMode` from
