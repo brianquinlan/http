@@ -3,6 +3,7 @@
 * Fix a [bug](https://github.com/dart-lang/http/issues/1925) where native
   assets were built on non-Apple platforms.
 * Support the latest semver-major versions of the native assets packages.
+* Fix some code examples.
 * Remove `README.md` text saying that the package is a Flutter plugin.
 
 ## 3.0.0

@@ -59,6 +59,12 @@ class _StreamedResponseWithUrl extends StreamedResponse
 ///
 /// For example:
 /// ```
+/// import 'dart:convert';
+/// import 'dart:io';
+/// import 'dart:math';
+///
+/// import 'package:cupertino_http/cupertino_http.dart';
+///
 /// void main() async {
 ///   var client = CupertinoClient.defaultSessionConfiguration();
 ///   final response = await client.get(
@@ -75,6 +81,7 @@ class _StreamedResponseWithUrl extends StreamedResponse
 ///   for (var i = 0; i < min(itemCount, 10); ++i) {
 ///     print(decodedResponse['items'][i]['volumeInfo']['title']);
 ///   }
+///   client.close();
 /// }
 /// ```
 class CupertinoClient extends BaseClient {
