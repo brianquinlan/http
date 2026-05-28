@@ -1,5 +1,6 @@
 ## 3.0.1-wip
 
+* Fix some code examples.
 * Remove `README.md` text saying that the package is a Flutter plugin.
 
 ## 3.0.0
