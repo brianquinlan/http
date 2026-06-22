@@ -4,6 +4,8 @@
 * Make it more clear that `close` must be called for correctness.
 * Replace references to `dart:web` with `package:web` dartdoc.
 * Preserve header cases in `IOClient`.
+* Fix a [bug](https://github.com/dart-lang/http/issues/1934) to release the
+  underlying connection when an `AbortableRequest` is aborted before its body is read.
 
 ## 1.6.0
 
