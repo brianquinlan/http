@@ -280,6 +280,13 @@ class CupertinoClient extends BaseClient {
     var numRedirects = 0;
     Uri? lastRedirectUrl;
 
+    // Encompase as much logic as possible in an autorelease pool, considering
+    // that [autoReleasePool] cannot contain asynchronous gaps.
+    //
+    // [URLSession.dataTaskWithRequest] adds several objects (including the
+    // returned [URLSessionTask]) to the autorelease pool. Putting that call
+    // (and others but it is the most significant) ensures that the only
+    // remaining references are live references.
     final (nsStream, task, dataController) = autoReleasePool(() {
       final urlRequest = MutableURLRequest.fromUrl(request.url)
         ..httpMethod = request.method;
