@@ -285,8 +285,8 @@ class CupertinoClient extends BaseClient {
     //
     // [URLSession.dataTaskWithRequest] adds several objects (including the
     // returned [URLSessionTask]) to the autorelease pool. Putting that call
-    // (and others but it is the most significant) ensures that the only
-    // remaining references are live references.
+    // (and others but it is the most significant) inside an [autoReleasePool]
+    // closure ensures that the only remaining references are live references.
     final (nsStream, task, dataController) = autoReleasePool(() {
       final urlRequest = MutableURLRequest.fromUrl(request.url)
         ..httpMethod = request.method;
