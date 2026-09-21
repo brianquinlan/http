@@ -280,7 +280,7 @@ class CupertinoClient extends BaseClient {
     var numRedirects = 0;
     Uri? lastRedirectUrl;
 
-    // Encompase as much logic as possible in an autorelease pool, considering
+    // Encompass as much logic as possible in an autorelease pool, considering
     // that [autoReleasePool] cannot contain asynchronous gaps.
     //
     // [URLSession.dataTaskWithRequest] adds several objects (including the
