@@ -254,6 +254,13 @@ class CupertinoClient extends BaseClient {
     final urlSession = _urlSession!;
 
     final stream = request.finalize();
+    final bool hasBody;
+    final Stream<List<int>> bodyStream;
+    if (request is Request) {
+      (hasBody, bodyStream) = (false, stream);
+    } else {
+      (hasBody, bodyStream) = await _hasData(stream);
+    }
 
     final profile = _createProfile(request);
     profile?.connectionInfo = {
@@ -267,28 +274,12 @@ class CupertinoClient extends BaseClient {
       ..headersCommaValues = request.headers
       ..maxRedirects = request.maxRedirects;
 
-    // Consume the request body stream *before* entering the autorelease pool
-    // below: an autorelease pool must be pushed and popped without any
-    // intervening asynchronous gap.
-    final bool hasBody;
-    final Stream<List<int>> bodyStream;
-    if (request is Request) {
-      (hasBody, bodyStream) = (false, stream);
-    } else {
-      (hasBody, bodyStream) = await _hasData(stream);
-    }
-
     final maxRedirects = request.followRedirects ? request.maxRedirects : 0;
     final responseCompleter = Completer<URLResponse>();
     var cancelled = false;
     var numRedirects = 0;
     Uri? lastRedirectUrl;
 
-    // Dart isolates do not run an `NSRunLoop` so the thread's autorelease pool
-    // is never drained. Without an explicit pool, every autoreleased object
-    // created below would be leaked for the lifetime of the isolate - most
-    // importantly the `NSURLSessionTask`, which transitively retains several
-    // KB of CFNetwork request, response and metrics state.
     final (nsStream, task, dataController) = autoReleasePool(() {
       final urlRequest = MutableURLRequest.fromUrl(request.url)
         ..httpMethod = request.method;
