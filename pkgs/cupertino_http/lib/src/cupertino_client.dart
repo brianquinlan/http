@@ -254,13 +254,6 @@ class CupertinoClient extends BaseClient {
     final urlSession = _urlSession!;
 
     final stream = request.finalize();
-    final bool hasBody;
-    final Stream<List<int>> bodyStream;
-    if (request is Request) {
-      (hasBody, bodyStream) = (false, stream);
-    } else {
-      (hasBody, bodyStream) = await _hasData(stream);
-    }
 
     final profile = _createProfile(request);
     profile?.connectionInfo = {
@@ -273,6 +266,18 @@ class CupertinoClient extends BaseClient {
       ..followRedirects = request.followRedirects
       ..headersCommaValues = request.headers
       ..maxRedirects = request.maxRedirects;
+
+    // Consume the first event of the request body stream here, outside of the
+    // `autoReleasePool` below, because an autorelease pool cannot contain
+    // asynchronous gaps. The profile must already exist because consuming the
+    // stream runs user code that can observe it.
+    final bool hasBody;
+    final Stream<List<int>> bodyStream;
+    if (request is Request) {
+      (hasBody, bodyStream) = (false, stream);
+    } else {
+      (hasBody, bodyStream) = await _hasData(stream);
+    }
 
     final maxRedirects = request.followRedirects ? request.maxRedirects : 0;
     final responseCompleter = Completer<URLResponse>();
