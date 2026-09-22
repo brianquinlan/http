@@ -106,6 +106,7 @@ class CupertinoWebSocket implements WebSocket {
       final session = config == null
           ? _sharedSession
           : URLSession.sessionWithConfiguration(config);
+      final ownedSession = config == null ? null : session;
 
       session.webSocketTaskWithURL(url, protocols: protocols)
         ..taskDelegate = URLSessionTask.delegate(
@@ -158,6 +159,10 @@ class CupertinoWebSocket implements WebSocket {
                 'abnormal close'.codeUnits.toNSData(),
               );
             }
+
+            // This doesn't actually reclaim any memory (see the comment) above
+            // the call to `autoReleasePool`) but it might one day.
+            ownedSession?.finishTasksAndInvalidate();
           },
         )
         ..resume();
