@@ -1,0 +1,34 @@
+name: curl_http
+version: 0.1.0-wip
+description: >-
+  A package:http Client implementation based on libcurl, which is compiled from
+  source and bundled using Dart native assets.
+repository: https://github.com/dart-lang/http/tree/master/pkgs/curl_http
+publish_to: none
+
+topics:
+  - http
+  - network
+  - protocols
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  code_assets: ^2.0.0
+  hooks: ^2.0.0
+  http: ^1.5.0
+  logging: ^1.3.0
+  native_toolchain_c: ^0.19.1
+
+dev_dependencies:
+  dart_flutter_team_lints: ^3.0.0
+  http2:
+    path: ../http2/
+  http_client_conformance_tests:
+    path: ../http_client_conformance_tests/
+  test: ^1.21.1
+
+dependency_overrides:
+  http:
+    path: ../http/

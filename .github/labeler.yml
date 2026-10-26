@@ -12,6 +12,10 @@
   - changed-files:
     - any-glob-to-any-file: 'pkgs/cupertino_http/**'
 
+'package:curl_http':
+  - changed-files:
+    - any-glob-to-any-file: 'pkgs/curl_http/**'
+
 'package:http':
   - changed-files:
     - any-glob-to-any-file: 'pkgs/http/**'

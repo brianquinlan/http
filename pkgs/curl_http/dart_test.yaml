@@ -1,0 +1,6 @@
+# The leak tests (test/leak_test.dart) count the native objects of the whole
+# process, so test suites must not run concurrently.
+concurrency: 1
+
+# The tests start local servers, and some of them transfer a lot of data.
+timeout: 2x
