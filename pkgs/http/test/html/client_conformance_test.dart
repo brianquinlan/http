@@ -15,6 +15,7 @@ void main() {
     redirectAlwaysAllowed: true,
     canStreamRequestBody: false,
     canStreamResponseBody: true,
+    canSendProxyAuthorizationHeaders: false,
     canWorkInIsolates: false,
     supportsMultipartRequest: false,
     supportsAbort: true,

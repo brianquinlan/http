@@ -67,6 +67,9 @@ export 'src/server_errors_test.dart' show testServerErrors;
 /// If [canSendCookieHeaders] is `false` then tests that require that "cookie"
 /// headers be sent by the client will not be run.
 ///
+/// If [canSendProxyAuthorizationHeaders] is `false` then tests that require
+/// that "proxy-authorization" headers be set by the client will not be run.
+///
 /// If [canReceiveSetCookieHeaders] is `false` then tests that require that
 /// "set-cookie" headers be received by the client will not be run.
 ///
@@ -95,6 +98,7 @@ void testAll(
   bool supportsFoldedHeaders = true,
   bool correctlyHandlesNullHeaderValues = true,
   bool canSendCookieHeaders = false,
+  bool canSendProxyAuthorizationHeaders = true,
   bool canReceiveSetCookieHeaders = false,
   bool supportsMultipartRequest = true,
   bool supportsAbort = false,
@@ -113,7 +117,10 @@ void testAll(
       supportsFoldedHeaders: supportsFoldedHeaders,
       correctlyHandlesNullHeaderValues: correctlyHandlesNullHeaderValues);
   testResponseStatusLine(clientFactory);
-  testRedirect(clientFactory, redirectAlwaysAllowed: redirectAlwaysAllowed);
+  testRedirect(clientFactory,
+      canSendCookieHeaders: canSendCookieHeaders,
+      canSendProxyAuthorizationHeaders: canSendProxyAuthorizationHeaders,
+      redirectAlwaysAllowed: redirectAlwaysAllowed);
   testServerErrors(clientFactory);
   testCompressedResponseBody(clientFactory);
   testMultipleClients(clientFactory);
