@@ -360,6 +360,41 @@ void testRedirect(Client Function() clientFactory,
       });
     }
 
+    test('cross host and back with set-cookie', () async {
+      // Each redirect response sets a cookie. A cookie set by one host must
+      // not be sent to the other host.
+      final request = Request('GET', Uri.http(localhost1, '/cookie-ping'))
+        ..followRedirects = true
+        ..maxRedirects = 2;
+      final response = await client.send(request);
+      await response.stream.drain<void>();
+      expect(response.statusCode, 200);
+      expect(response.isRedirect, false);
+      if (response case BaseResponseWithUrl(url: final url)) {
+        expect(url, Uri.http(localhost1, '/'));
+      }
+
+      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      expect(server1, 'server1');
+      expect(h1, containsPair('host', [localhost1]));
+
+      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      expect(server2, 'server2');
+      expect(h2, containsPair('host', [loopback2]));
+      expect(
+          h2,
+          isNot(
+              containsPair('cookie', contains(contains('localhost-cookie')))));
+
+      // "localhost-cookie" may or may not be sent, depending on whether the
+      // client stores cookies.
+      final [server3, _, _, h3] = await httpServerQueue.next as List<Object?>;
+      expect(server3, 'server1');
+      expect(h3, containsPair('host', [localhost1]));
+      expect(h3,
+          isNot(containsPair('cookie', contains(contains('loopback-cookie')))));
+    });
+
     test('scheme-relative cross host redirect', () async {
       final request = Request('GET', Uri.http(localhost1, '/scheme-relative'))
         ..followRedirects = true

@@ -29,6 +29,7 @@ import 'package:stream_channel/stream_channel.dart';
 /// | `/cross-host-307`  | `307` -> `http://127.0.0.1:<server2.port>/`      |
 /// | `/cross-host-308`  | `308` -> `http://127.0.0.1:<server2.port>/`      |
 /// | `/cross-ping`      | `302` -> `http://127.0.0.1:<server2.port>/pong`  |
+/// | `/cookie-ping`     | `/cross-ping` + `Set-Cookie`, to `/cookie-pong`  |
 /// | `/relative`        | `302` -> `/`                                     |
 /// | `/scheme-relative` | `302` -> `//127.0.0.1:<server1.port>/`           |
 /// | `/loop`            | `302` -> `http://localhost:<server1.port>/loop`  |
@@ -41,7 +42,11 @@ import 'package:stream_channel/stream_channel.dart';
 /// | Request path       | Response                                         |
 /// | :----------------- | :----------------------------------------------- |
 /// | `/pong`            | `302` -> `http://localhost:<server1.port>/`      |
+/// | `/cookie-pong`     | `/pong` + `Set-Cookie`                           |
 /// | `/`                | `200 OK`                                         |
+///
+/// `/cookie-ping` sets the cookie `localhost-cookie=secret` and `/cookie-pong`
+/// sets the cookie `loopback-cookie=secret`.
 void hybridMain(StreamChannel<Object?> channel) async {
   late HttpServer server1;
   late HttpServer server2;
@@ -99,6 +104,11 @@ void hybridMain(StreamChannel<Object?> channel) async {
           case 'cross-ping':
             unawaited(request.response
                 .redirect(Uri.http('127.0.0.1:${server2.port}', '/pong')));
+          case 'cookie-ping':
+            request.response.headers
+                .add('set-cookie', 'localhost-cookie=secret');
+            unawaited(request.response.redirect(
+                Uri.http('127.0.0.1:${server2.port}', '/cookie-pong')));
           case 'relative':
             request.response
               ..statusCode = HttpStatus.found
@@ -144,6 +154,10 @@ void hybridMain(StreamChannel<Object?> channel) async {
       if (request.requestedUri.pathSegments.isEmpty) {
         unawaited(request.response.close());
       } else if (request.requestedUri.pathSegments.last == 'pong') {
+        unawaited(request.response
+            .redirect(Uri.http('localhost:${server1.port}', '/')));
+      } else if (request.requestedUri.pathSegments.last == 'cookie-pong') {
+        request.response.headers.add('set-cookie', 'loopback-cookie=secret');
         unawaited(request.response
             .redirect(Uri.http('localhost:${server1.port}', '/')));
       }
