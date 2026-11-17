@@ -123,6 +123,7 @@ void testRedirect(Client Function() clientFactory,
       expect(server1, 'server1');
       expect(method1, 'GET');
       expect(body1, isEmpty);
+      expect(h1, containsPair('host', [localhost1]));
       expect(h1, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
         expect(h1, containsPair('cookie', ['foo=bar']));
@@ -132,6 +133,7 @@ void testRedirect(Client Function() clientFactory,
       expect(server2, 'server1');
       expect(method2, 'GET');
       expect(body2, isEmpty);
+      expect(h2, containsPair('host', [localhost1]));
       expect(h2, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
         expect(h2, containsPair('cookie', ['foo=bar']));
@@ -157,6 +159,7 @@ void testRedirect(Client Function() clientFactory,
       expect(server1, 'server1');
       expect(method1, 'GET');
       expect(body1, isEmpty);
+      expect(h1, containsPair('host', [localhost1]));
       expect(h1, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
         expect(h1, containsPair('cookie', ['foo=bar']));
@@ -166,6 +169,7 @@ void testRedirect(Client Function() clientFactory,
       expect(server2, 'server1');
       expect(method2, 'GET');
       expect(body2, isEmpty);
+      expect(h2, containsPair('host', [localhost1]));
       expect(h2, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
         expect(h2, containsPair('cookie', ['foo=bar']));
@@ -245,6 +249,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -256,6 +261,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
         expect(server2, 'server2');
+        expect(h2, containsPair('host', [localhost2]));
         expect(h2, containsPair('hello', ['world']));
         // Cookies may or may not be preserved.
         expect(h2, isNot(contains('authorization')));
@@ -283,6 +289,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -294,6 +301,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
         expect(server2, 'server1');
+        expect(h2, containsPair('host', [loopback1]));
         expect(h2, containsPair('hello', ['world']));
         expect(h2, isNot(contains('authorization')));
         expect(h2, isNot(contains('cookie')));
@@ -324,6 +332,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -335,6 +344,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
         expect(server2, 'server2');
+        expect(h2, containsPair('host', [loopback2]));
         expect(h2, containsPair('hello', ['world']));
         expect(h2, isNot(contains('authorization')));
         expect(h2, isNot(contains('cookie')));
@@ -342,6 +352,7 @@ void testRedirect(Client Function() clientFactory,
 
         final [server3, _, _, h3] = await httpServerQueue.next as List<Object?>;
         expect(server3, 'server1');
+        expect(h3, containsPair('host', [localhost1]));
         expect(h3, containsPair('hello', ['world']));
         expect(h3, isNot(contains('authorization')));
         expect(h3, isNot(contains('cookie')));
@@ -371,6 +382,7 @@ void testRedirect(Client Function() clientFactory,
 
       final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
+      expect(h1, containsPair('host', [localhost1]));
       expect(h1, containsPair('hello', ['world']));
       expect(h1, containsPair('authorization', ['anything']));
       if (canSendCookieHeaders) {
@@ -382,6 +394,7 @@ void testRedirect(Client Function() clientFactory,
 
       final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
       expect(server2, 'server1');
+      expect(h2, containsPair('host', [loopback1]));
       expect(h2, containsPair('hello', ['world']));
       expect(h2, isNot(contains('authorization')));
       expect(h2, isNot(contains('cookie')));
@@ -412,6 +425,7 @@ void testRedirect(Client Function() clientFactory,
         expect(server1, 'server1');
         expect(method1, 'POST');
         expect(body1, 'Hello World!');
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -446,6 +460,7 @@ void testRedirect(Client Function() clientFactory,
           expect(server2, 'server2');
           expect(method2, 'GET');
           expect(body2, isEmpty);
+          expect(h2, containsPair('host', [loopback2]));
           expect(h2, containsPair('hello', ['world']));
           expect(h2, isNot(contains('authorization')));
           expect(h2, isNot(contains('cookie')));
@@ -482,6 +497,7 @@ void testRedirect(Client Function() clientFactory,
         expect(server1, 'server1');
         expect(method1, 'GET');
         expect(body1, isEmpty);
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -496,6 +512,7 @@ void testRedirect(Client Function() clientFactory,
         expect(server2, 'server2');
         expect(method2, 'GET');
         expect(body2, isEmpty);
+        expect(h2, containsPair('host', [loopback2]));
         expect(h2, containsPair('hello', ['world']));
         expect(h2, isNot(contains('authorization')));
         expect(h2, isNot(contains('cookie')));
@@ -525,6 +542,7 @@ void testRedirect(Client Function() clientFactory,
         expect(server1, 'server1');
         expect(method1, 'POST');
         expect(body1, 'Hello World!');
+        expect(h1, containsPair('host', [localhost1]));
         expect(h1, containsPair('hello', ['world']));
         expect(h1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
@@ -551,6 +569,7 @@ void testRedirect(Client Function() clientFactory,
           expect(server2, 'server2');
           expect(method2, 'POST');
           expect(body2, 'Hello World!');
+          expect(h2, containsPair('host', [loopback2]));
           expect(h2, containsPair('hello', ['world']));
           expect(h2, isNot(contains('authorization')));
           expect(h2, isNot(contains('cookie')));
