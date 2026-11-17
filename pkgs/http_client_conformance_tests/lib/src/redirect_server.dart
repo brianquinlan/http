@@ -26,6 +26,8 @@ import 'package:stream_channel/stream_channel.dart';
 /// | `/cross-host-301`  | `301` -> `http://127.0.0.1:<server2.port>/`      |
 /// | `/cross-host-302`  | `302` -> `http://127.0.0.1:<server2.port>/`      |
 /// | `/cross-host-303`  | `303` -> `http://127.0.0.1:<server2.port>/`      |
+/// | `/cross-host-307`  | `307` -> `http://127.0.0.1:<server2.port>/`      |
+/// | `/cross-host-308`  | `308` -> `http://127.0.0.1:<server2.port>/`      |
 /// | `/cross-ping`      | `302` -> `http://127.0.0.1:<server2.port>/pong`  |
 /// | `/relative`        | `302` -> `/`                                     |
 /// | `/scheme-relative` | `302` -> `//127.0.0.1:<server1.port>/`           |
@@ -86,6 +88,14 @@ void hybridMain(StreamChannel<Object?> channel) async {
             unawaited(request.response.redirect(
                 Uri.http('127.0.0.1:${server2.port}', '/'),
                 status: HttpStatus.seeOther));
+          case 'cross-host-307':
+            unawaited(request.response.redirect(
+                Uri.http('127.0.0.1:${server2.port}', '/'),
+                status: HttpStatus.temporaryRedirect));
+          case 'cross-host-308':
+            unawaited(request.response.redirect(
+                Uri.http('127.0.0.1:${server2.port}', '/'),
+                status: HttpStatus.permanentRedirect));
           case 'cross-ping':
             unawaited(request.response
                 .redirect(Uri.http('127.0.0.1:${server2.port}', '/pong')));

@@ -444,5 +444,108 @@ void testRedirect(Client Function() clientFactory,
         }
       });
     }
+
+    for (final code in [307, 308]) {
+      test('GET $code cross host redirect', () async {
+        final request = Request('GET', Uri.http(host1, '/cross-host-$code'))
+          ..followRedirects = true
+          ..maxRedirects = 1;
+        request.headers['hello'] = 'world';
+        request.headers['authorization'] = 'anything';
+        if (canSendCookieHeaders) {
+          request.headers['cookie'] = 'foo=bar';
+        }
+        if (canSendProxyAuthorizationHeaders) {
+          request.headers['proxy-authorization'] = 'anything';
+        }
+
+        final response = await client.send(request);
+        await response.stream.drain<void>();
+        expect(response.statusCode, 200);
+        expect(response.isRedirect, false);
+        if (response case BaseResponseWithUrl(url: final url)) {
+          expect(url, Uri.http('127.0.0.1:${Uri.http(host2, '').port}', '/'));
+        }
+
+        final [server1, method1, body1, h1] =
+            await httpServerQueue.next as List<Object?>;
+        expect(server1, 'server1');
+        expect(method1, 'GET');
+        expect(body1, isEmpty);
+        expect(h1, containsPair('hello', ['world']));
+        expect(h1, containsPair('authorization', ['anything']));
+        if (canSendCookieHeaders) {
+          expect(h1, containsPair('cookie', ['foo=bar']));
+        }
+        if (canSendProxyAuthorizationHeaders) {
+          expect(h1, containsPair('proxy-authorization', ['anything']));
+        }
+
+        final [server2, method2, body2, h2] =
+            await httpServerQueue.next as List<Object?>;
+        expect(server2, 'server2');
+        expect(method2, 'GET');
+        expect(body2, isEmpty);
+        expect(h2, containsPair('hello', ['world']));
+        expect(h2, isNot(contains('authorization')));
+        expect(h2, isNot(contains('cookie')));
+        expect(h2, isNot(contains('proxy-authorization')));
+      });
+
+      test('POST $code cross host redirect', () async {
+        final request = Request('POST', Uri.http(host1, '/cross-host-$code'))
+          ..body = 'Hello World!'
+          ..followRedirects = true
+          ..maxRedirects = 1;
+        request.headers['hello'] = 'world';
+        request.headers['authorization'] = 'anything';
+        if (canSendCookieHeaders) {
+          request.headers['cookie'] = 'foo=bar';
+        }
+        if (canSendProxyAuthorizationHeaders) {
+          request.headers['proxy-authorization'] = 'anything';
+        }
+
+        final response = await client.send(request);
+        await response.stream.drain<void>();
+
+        final [server1, method1, body1, h1] =
+            await httpServerQueue.next as List<Object?>;
+        expect(server1, 'server1');
+        expect(method1, 'POST');
+        expect(body1, 'Hello World!');
+        expect(h1, containsPair('hello', ['world']));
+        expect(h1, containsPair('authorization', ['anything']));
+        if (canSendCookieHeaders) {
+          expect(h1, containsPair('cookie', ['foo=bar']));
+        }
+        if (canSendProxyAuthorizationHeaders) {
+          expect(h1, containsPair('proxy-authorization', ['anything']));
+        }
+
+        // RFC 9110, 15.4.8-15.4.9:
+        // The user agent MAY use the Location field value for automatic
+        // redirection, and MUST NOT change the request method if it performs an
+        // automatic redirection to that URI.
+        expect(response.statusCode, anyOf(200, code));
+
+        if (response.statusCode == 200) {
+          expect(response.isRedirect, false);
+          if (response case BaseResponseWithUrl(url: final url)) {
+            expect(url, Uri.http('127.0.0.1:${Uri.http(host2, '').port}', '/'));
+          }
+
+          final [server2, method2, body2, h2] =
+              await httpServerQueue.next as List<Object?>;
+          expect(server2, 'server2');
+          expect(method2, 'POST');
+          expect(body2, 'Hello World!');
+          expect(h2, containsPair('hello', ['world']));
+          expect(h2, isNot(contains('authorization')));
+          expect(h2, isNot(contains('cookie')));
+          expect(h2, isNot(contains('proxy-authorization')));
+        }
+      });
+    }
   });
 }
