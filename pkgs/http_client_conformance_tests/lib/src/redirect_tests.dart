@@ -123,25 +123,25 @@ void testRedirect(Client Function() clientFactory,
       if (response case BaseResponseWithUrl(url: final url)) {
         expect(url, Uri.http(localhost1, '/'));
       }
-      final [server1, method1, body1, h1] =
+      final [server1, method1, body1, headers1] =
           await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
       expect(method1, 'GET');
       expect(body1, isEmpty);
-      expect(h1, containsPair('host', [localhost1]));
-      expect(h1, containsPair('hello', ['world']));
+      expect(headers1, containsPair('host', [localhost1]));
+      expect(headers1, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
-        expect(h1, containsPair('cookie', ['foo=bar']));
+        expect(headers1, containsPair('cookie', ['foo=bar']));
       }
-      final [server2, method2, body2, h2] =
+      final [server2, method2, body2, headers2] =
           await httpServerQueue.next as List<Object?>;
       expect(server2, 'server1');
       expect(method2, 'GET');
       expect(body2, isEmpty);
-      expect(h2, containsPair('host', [localhost1]));
-      expect(h2, containsPair('hello', ['world']));
+      expect(headers2, containsPair('host', [localhost1]));
+      expect(headers2, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
-        expect(h2, containsPair('cookie', ['foo=bar']));
+        expect(headers2, containsPair('cookie', ['foo=bar']));
       }
     });
 
@@ -159,25 +159,25 @@ void testRedirect(Client Function() clientFactory,
       if (response case BaseResponseWithUrl(url: final url)) {
         expect(url, Uri.http(localhost1, '/'));
       }
-      final [server1, method1, body1, h1] =
+      final [server1, method1, body1, headers1] =
           await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
       expect(method1, 'GET');
       expect(body1, isEmpty);
-      expect(h1, containsPair('host', [localhost1]));
-      expect(h1, containsPair('hello', ['world']));
+      expect(headers1, containsPair('host', [localhost1]));
+      expect(headers1, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
-        expect(h1, containsPair('cookie', ['foo=bar']));
+        expect(headers1, containsPair('cookie', ['foo=bar']));
       }
-      final [server2, method2, body2, h2] =
+      final [server2, method2, body2, headers2] =
           await httpServerQueue.next as List<Object?>;
       expect(server2, 'server1');
       expect(method2, 'GET');
       expect(body2, isEmpty);
-      expect(h2, containsPair('host', [localhost1]));
-      expect(h2, containsPair('hello', ['world']));
+      expect(headers2, containsPair('host', [localhost1]));
+      expect(headers2, containsPair('hello', ['world']));
       if (canSendCookieHeaders) {
-        expect(h2, containsPair('cookie', ['foo=bar']));
+        expect(headers2, containsPair('cookie', ['foo=bar']));
       }
     });
 
@@ -252,25 +252,27 @@ void testRedirect(Client Function() clientFactory,
           expect(url, Uri.http(localhost2, '/'));
         }
 
-        final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+        final [server1, _, _, headers1] =
+            await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
-        final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+        final [server2, _, _, headers2] =
+            await httpServerQueue.next as List<Object?>;
         expect(server2, 'server2');
-        expect(h2, containsPair('host', [localhost2]));
-        expect(h2, containsPair('hello', ['world']));
+        expect(headers2, containsPair('host', [localhost2]));
+        expect(headers2, containsPair('hello', ['world']));
         // Cookies may or may not be preserved.
-        expect(h2, isNot(contains('authorization')));
-        expect(h2, isNot(contains('proxy-authorization')));
+        expect(headers2, isNot(contains('authorization')));
+        expect(headers2, isNot(contains('proxy-authorization')));
       });
 
       test(
@@ -292,25 +294,27 @@ void testRedirect(Client Function() clientFactory,
         expect(response.statusCode, 200);
         expect(response.isRedirect, false);
 
-        final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+        final [server1, _, _, headers1] =
+            await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
-        final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+        final [server2, _, _, headers2] =
+            await httpServerQueue.next as List<Object?>;
         expect(server2, 'server1');
-        expect(h2, containsPair('host', [loopback1]));
-        expect(h2, containsPair('hello', ['world']));
-        expect(h2, isNot(contains('authorization')));
-        expect(h2, isNot(contains('cookie')));
-        expect(h2, isNot(contains('proxy-authorization')));
+        expect(headers2, containsPair('host', [loopback1]));
+        expect(headers2, containsPair('hello', ['world']));
+        expect(headers2, isNot(contains('authorization')));
+        expect(headers2, isNot(contains('cookie')));
+        expect(headers2, isNot(contains('proxy-authorization')));
       });
 
       test(
@@ -335,33 +339,36 @@ void testRedirect(Client Function() clientFactory,
           expect(url, Uri.http(localhost1, '/'));
         }
 
-        final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+        final [server1, _, _, headers1] =
+            await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
-        final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+        final [server2, _, _, headers2] =
+            await httpServerQueue.next as List<Object?>;
         expect(server2, 'server2');
-        expect(h2, containsPair('host', [loopback2]));
-        expect(h2, containsPair('hello', ['world']));
-        expect(h2, isNot(contains('authorization')));
-        expect(h2, isNot(contains('cookie')));
-        expect(h2, isNot(contains('proxy-authorization')));
+        expect(headers2, containsPair('host', [loopback2]));
+        expect(headers2, containsPair('hello', ['world']));
+        expect(headers2, isNot(contains('authorization')));
+        expect(headers2, isNot(contains('cookie')));
+        expect(headers2, isNot(contains('proxy-authorization')));
 
-        final [server3, _, _, h3] = await httpServerQueue.next as List<Object?>;
+        final [server3, _, _, headers3] =
+            await httpServerQueue.next as List<Object?>;
         expect(server3, 'server1');
-        expect(h3, containsPair('host', [localhost1]));
-        expect(h3, containsPair('hello', ['world']));
-        expect(h3, isNot(contains('authorization')));
-        expect(h3, isNot(contains('cookie')));
-        expect(h3, isNot(contains('proxy-authorization')));
+        expect(headers3, containsPair('host', [localhost1]));
+        expect(headers3, containsPair('hello', ['world']));
+        expect(headers3, isNot(contains('authorization')));
+        expect(headers3, isNot(contains('cookie')));
+        expect(headers3, isNot(contains('proxy-authorization')));
       });
     }
 
@@ -379,24 +386,27 @@ void testRedirect(Client Function() clientFactory,
         expect(url, Uri.http(localhost1, '/'));
       }
 
-      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      final [server1, _, _, headers1] =
+          await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
-      expect(h1, containsPair('host', [localhost1]));
+      expect(headers1, containsPair('host', [localhost1]));
 
-      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      final [server2, _, _, headers2] =
+          await httpServerQueue.next as List<Object?>;
       expect(server2, 'server2');
-      expect(h2, containsPair('host', [loopback2]));
+      expect(headers2, containsPair('host', [loopback2]));
       expect(
-          h2,
+          headers2,
           isNot(
               containsPair('cookie', contains(contains('localhost-cookie')))));
 
       // "localhost-cookie" may or may not be sent, depending on whether the
       // client stores cookies.
-      final [server3, _, _, h3] = await httpServerQueue.next as List<Object?>;
+      final [server3, _, _, headers3] =
+          await httpServerQueue.next as List<Object?>;
       expect(server3, 'server1');
-      expect(h3, containsPair('host', [localhost1]));
-      expect(h3,
+      expect(headers3, containsPair('host', [localhost1]));
+      expect(headers3,
           isNot(containsPair('cookie', contains(contains('loopback-cookie')))));
     });
 
@@ -416,14 +426,16 @@ void testRedirect(Client Function() clientFactory,
         expect(url, Uri.http(loopback1, '/'));
       }
 
-      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      final [server1, _, _, headers1] =
+          await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
-      expect(h1, containsPair('host', [localhost1]));
+      expect(headers1, containsPair('host', [localhost1]));
 
-      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      final [server2, _, _, headers2] =
+          await httpServerQueue.next as List<Object?>;
       expect(server2, 'server1');
-      expect(h2, containsPair('host', [loopback1]));
-      expect(h2, isNot(contains('authorization')));
+      expect(headers2, containsPair('host', [loopback1]));
+      expect(headers2, isNot(contains('authorization')));
     }, skip: canSetUserInfo ? false : 'cannot set userinfo');
 
     test('scheme-relative cross host redirect', () async {
@@ -446,25 +458,27 @@ void testRedirect(Client Function() clientFactory,
         expect(url, Uri.http(loopback1, '/'));
       }
 
-      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      final [server1, _, _, headers1] =
+          await httpServerQueue.next as List<Object?>;
       expect(server1, 'server1');
-      expect(h1, containsPair('host', [localhost1]));
-      expect(h1, containsPair('hello', ['world']));
-      expect(h1, containsPair('authorization', ['anything']));
+      expect(headers1, containsPair('host', [localhost1]));
+      expect(headers1, containsPair('hello', ['world']));
+      expect(headers1, containsPair('authorization', ['anything']));
       if (canSendCookieHeaders) {
-        expect(h1, containsPair('cookie', ['foo=bar']));
+        expect(headers1, containsPair('cookie', ['foo=bar']));
       }
       if (canSendProxyAuthorizationHeaders) {
-        expect(h1, containsPair('proxy-authorization', ['anything']));
+        expect(headers1, containsPair('proxy-authorization', ['anything']));
       }
 
-      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      final [server2, _, _, headers2] =
+          await httpServerQueue.next as List<Object?>;
       expect(server2, 'server1');
-      expect(h2, containsPair('host', [loopback1]));
-      expect(h2, containsPair('hello', ['world']));
-      expect(h2, isNot(contains('authorization')));
-      expect(h2, isNot(contains('cookie')));
-      expect(h2, isNot(contains('proxy-authorization')));
+      expect(headers2, containsPair('host', [loopback1]));
+      expect(headers2, containsPair('hello', ['world']));
+      expect(headers2, isNot(contains('authorization')));
+      expect(headers2, isNot(contains('cookie')));
+      expect(headers2, isNot(contains('proxy-authorization')));
     });
 
     for (final code in [301, 302, 303]) {
@@ -486,19 +500,19 @@ void testRedirect(Client Function() clientFactory,
         final response = await client.send(request);
         await response.stream.drain<void>();
 
-        final [server1, method1, body1, h1] =
+        final [server1, method1, body1, headers1] =
             await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
         expect(method1, 'POST');
         expect(body1, 'Hello World!');
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
         if (code == 303) {
@@ -521,16 +535,16 @@ void testRedirect(Client Function() clientFactory,
             expect(url, Uri.http(loopback2, '/'));
           }
 
-          final [server2, method2, body2, h2] =
+          final [server2, method2, body2, headers2] =
               await httpServerQueue.next as List<Object?>;
           expect(server2, 'server2');
           expect(method2, 'GET');
           expect(body2, isEmpty);
-          expect(h2, containsPair('host', [loopback2]));
-          expect(h2, containsPair('hello', ['world']));
-          expect(h2, isNot(contains('authorization')));
-          expect(h2, isNot(contains('cookie')));
-          expect(h2, isNot(contains('proxy-authorization')));
+          expect(headers2, containsPair('host', [loopback2]));
+          expect(headers2, containsPair('hello', ['world']));
+          expect(headers2, isNot(contains('authorization')));
+          expect(headers2, isNot(contains('cookie')));
+          expect(headers2, isNot(contains('proxy-authorization')));
         }
       });
     }
@@ -558,31 +572,31 @@ void testRedirect(Client Function() clientFactory,
           expect(url, Uri.http(loopback2, '/'));
         }
 
-        final [server1, method1, body1, h1] =
+        final [server1, method1, body1, headers1] =
             await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
         expect(method1, 'GET');
         expect(body1, isEmpty);
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
-        final [server2, method2, body2, h2] =
+        final [server2, method2, body2, headers2] =
             await httpServerQueue.next as List<Object?>;
         expect(server2, 'server2');
         expect(method2, 'GET');
         expect(body2, isEmpty);
-        expect(h2, containsPair('host', [loopback2]));
-        expect(h2, containsPair('hello', ['world']));
-        expect(h2, isNot(contains('authorization')));
-        expect(h2, isNot(contains('cookie')));
-        expect(h2, isNot(contains('proxy-authorization')));
+        expect(headers2, containsPair('host', [loopback2]));
+        expect(headers2, containsPair('hello', ['world']));
+        expect(headers2, isNot(contains('authorization')));
+        expect(headers2, isNot(contains('cookie')));
+        expect(headers2, isNot(contains('proxy-authorization')));
       });
 
       test('POST $code cross host redirect', () async {
@@ -603,19 +617,19 @@ void testRedirect(Client Function() clientFactory,
         final response = await client.send(request);
         await response.stream.drain<void>();
 
-        final [server1, method1, body1, h1] =
+        final [server1, method1, body1, headers1] =
             await httpServerQueue.next as List<Object?>;
         expect(server1, 'server1');
         expect(method1, 'POST');
         expect(body1, 'Hello World!');
-        expect(h1, containsPair('host', [localhost1]));
-        expect(h1, containsPair('hello', ['world']));
-        expect(h1, containsPair('authorization', ['anything']));
+        expect(headers1, containsPair('host', [localhost1]));
+        expect(headers1, containsPair('hello', ['world']));
+        expect(headers1, containsPair('authorization', ['anything']));
         if (canSendCookieHeaders) {
-          expect(h1, containsPair('cookie', ['foo=bar']));
+          expect(headers1, containsPair('cookie', ['foo=bar']));
         }
         if (canSendProxyAuthorizationHeaders) {
-          expect(h1, containsPair('proxy-authorization', ['anything']));
+          expect(headers1, containsPair('proxy-authorization', ['anything']));
         }
 
         // RFC 9110, 15.4.8-15.4.9:
@@ -630,16 +644,16 @@ void testRedirect(Client Function() clientFactory,
             expect(url, Uri.http(loopback2, '/'));
           }
 
-          final [server2, method2, body2, h2] =
+          final [server2, method2, body2, headers2] =
               await httpServerQueue.next as List<Object?>;
           expect(server2, 'server2');
           expect(method2, 'POST');
           expect(body2, 'Hello World!');
-          expect(h2, containsPair('host', [loopback2]));
-          expect(h2, containsPair('hello', ['world']));
-          expect(h2, isNot(contains('authorization')));
-          expect(h2, isNot(contains('cookie')));
-          expect(h2, isNot(contains('proxy-authorization')));
+          expect(headers2, containsPair('host', [loopback2]));
+          expect(headers2, containsPair('hello', ['world']));
+          expect(headers2, isNot(contains('authorization')));
+          expect(headers2, isNot(contains('cookie')));
+          expect(headers2, isNot(contains('proxy-authorization')));
         }
       });
     }
