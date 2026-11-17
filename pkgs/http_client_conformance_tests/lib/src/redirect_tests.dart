@@ -44,47 +44,55 @@ void testRedirect(Client Function() clientFactory,
     //   redirect
 
     late Client client;
-    late String host1;
-    late String host2;
+    late String localhost1;
+    late String localhost2;
+    late String loopback1;
+    late String loopback2;
     late StreamChannel<Object?> httpServerChannel;
     late StreamQueue<Object?> httpServerQueue;
 
     setUp(() async {
       httpServerChannel = await startServer();
       httpServerQueue = StreamQueue(httpServerChannel.stream);
-      host1 = 'localhost:${await httpServerQueue.nextAsInt}';
-      host2 = 'localhost:${await httpServerQueue.nextAsInt}';
+      final port1 = await httpServerQueue.nextAsInt;
+      final port2 = await httpServerQueue.nextAsInt;
+      localhost1 = 'localhost:$port1';
+      localhost2 = 'localhost:$port2';
+      loopback1 = '127.0.0.1:$port1';
+      loopback2 = '127.0.0.1:$port2';
+      client = clientFactory();
     });
-    setUp(() => client = clientFactory());
-    tearDown(() => client.close());
-    tearDown(() => httpServerChannel.sink.add(null));
+    tearDown(() {
+      client.close();
+      httpServerChannel.sink.add(null);
+    });
 
     test('no redirect', () async {
-      final request = Request('GET', Uri.http(host1, '/'))
+      final request = Request('GET', Uri.http(localhost1, '/'))
         ..followRedirects = false;
       final response = await client.send(request);
       await response.stream.drain<void>();
       expect(response.statusCode, 200);
       expect(response.isRedirect, false);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/'));
+        expect(url, Uri.http(localhost1, '/'));
       }
     });
 
     test('disallow redirect', () async {
-      final request = Request('GET', Uri.http(host1, '/1'))
+      final request = Request('GET', Uri.http(localhost1, '/1'))
         ..followRedirects = false;
       final response = await client.send(request);
       await response.stream.drain<void>();
       expect(response.statusCode, 302);
       expect(response.isRedirect, true);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/1'));
+        expect(url, Uri.http(localhost1, '/1'));
       }
     }, skip: redirectAlwaysAllowed ? 'redirects always allowed' : false);
 
     test('disallow redirect, 0 maxRedirects', () async {
-      final request = Request('GET', Uri.http(host1, '/1'))
+      final request = Request('GET', Uri.http(localhost1, '/1'))
         ..followRedirects = false
         ..maxRedirects = 0;
       final response = await client.send(request);
@@ -92,12 +100,12 @@ void testRedirect(Client Function() clientFactory,
       expect(response.statusCode, 302);
       expect(response.isRedirect, true);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/1'));
+        expect(url, Uri.http(localhost1, '/1'));
       }
     }, skip: redirectAlwaysAllowed ? 'redirects always allowed' : false);
 
     test('allow redirect', () async {
-      final request = Request('GET', Uri.http(host1, '/1'))
+      final request = Request('GET', Uri.http(localhost1, '/1'))
         ..followRedirects = true;
       request.headers['hello'] = 'world';
       if (canSendCookieHeaders) {
@@ -108,7 +116,7 @@ void testRedirect(Client Function() clientFactory,
       expect(response.statusCode, 200);
       expect(response.isRedirect, false);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/'));
+        expect(url, Uri.http(localhost1, '/'));
       }
       final [server1, method1, body1, h1] =
           await httpServerQueue.next as List<Object?>;
@@ -131,7 +139,7 @@ void testRedirect(Client Function() clientFactory,
     });
 
     test('relative redirect', () async {
-      final request = Request('GET', Uri.http(host1, '/relative'))
+      final request = Request('GET', Uri.http(localhost1, '/relative'))
         ..followRedirects = true;
       request.headers['hello'] = 'world';
       if (canSendCookieHeaders) {
@@ -142,7 +150,7 @@ void testRedirect(Client Function() clientFactory,
       expect(response.statusCode, 200);
       expect(response.isRedirect, false);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/'));
+        expect(url, Uri.http(localhost1, '/'));
       }
       final [server1, method1, body1, h1] =
           await httpServerQueue.next as List<Object?>;
@@ -165,7 +173,7 @@ void testRedirect(Client Function() clientFactory,
     });
 
     test('allow redirect, 0 maxRedirects', () async {
-      final request = Request('GET', Uri.http(host1, '/1'))
+      final request = Request('GET', Uri.http(localhost1, '/1'))
         ..followRedirects = true
         ..maxRedirects = 0;
       expect(
@@ -175,7 +183,7 @@ void testRedirect(Client Function() clientFactory,
     }, skip: redirectAlwaysAllowed ? 'redirects always allowed' : false);
 
     test('exactly the right number of allowed redirects', () async {
-      final request = Request('GET', Uri.http(host1, '/5'))
+      final request = Request('GET', Uri.http(localhost1, '/5'))
         ..followRedirects = true
         ..maxRedirects = 5;
       final response = await client.send(request);
@@ -183,12 +191,12 @@ void testRedirect(Client Function() clientFactory,
       expect(response.statusCode, 200);
       expect(response.isRedirect, false);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http(host1, '/'));
+        expect(url, Uri.http(localhost1, '/'));
       }
     }, skip: redirectAlwaysAllowed ? 'redirects always allowed' : false);
 
     test('too many redirects', () async {
-      final request = Request('GET', Uri.http(host1, '/6'))
+      final request = Request('GET', Uri.http(localhost1, '/6'))
         ..followRedirects = true
         ..maxRedirects = 5;
       expect(
@@ -200,7 +208,7 @@ void testRedirect(Client Function() clientFactory,
     test(
       'loop',
       () async {
-        final request = Request('GET', Uri.http(host1, '/loop'))
+        final request = Request('GET', Uri.http(localhost1, '/loop'))
           ..followRedirects = true
           ..maxRedirects = 5;
         expect(client.send(request), throwsA(isA<ClientException>()));
@@ -215,7 +223,7 @@ void testRedirect(Client Function() clientFactory,
       test(
           'cross port redirect '
           '($authorization, $cookie, $proxyAuthorization)', () async {
-        final request = Request('GET', Uri.http(host1, '/cross-port'))
+        final request = Request('GET', Uri.http(localhost1, '/cross-port'))
           ..followRedirects = true
           ..maxRedirects = 1;
         request.headers['hello'] = 'world';
@@ -232,7 +240,7 @@ void testRedirect(Client Function() clientFactory,
         expect(response.statusCode, 200);
         expect(response.isRedirect, false);
         if (response case BaseResponseWithUrl(url: final url)) {
-          expect(url, Uri.http(host2, '/'));
+          expect(url, Uri.http(localhost2, '/'));
         }
 
         final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
@@ -257,7 +265,7 @@ void testRedirect(Client Function() clientFactory,
       test(
           'cross host redirect '
           '($authorization, $cookie, $proxyAuthorization)', () async {
-        final request = Request('GET', Uri.http(host1, '/cross-host'))
+        final request = Request('GET', Uri.http(localhost1, '/cross-host'))
           ..followRedirects = true
           ..maxRedirects = 1;
         request.headers['hello'] = 'world';
@@ -295,7 +303,7 @@ void testRedirect(Client Function() clientFactory,
       test(
           'cross host and back '
           '($authorization, $cookie, $proxyAuthorization)', () async {
-        final request = Request('GET', Uri.http(host1, '/cross-ping'))
+        final request = Request('GET', Uri.http(localhost1, '/cross-ping'))
           ..followRedirects = true
           ..maxRedirects = 2;
         request.headers['hello'] = 'world';
@@ -311,7 +319,7 @@ void testRedirect(Client Function() clientFactory,
         expect(response.statusCode, 200);
         expect(response.isRedirect, false);
         if (response case BaseResponseWithUrl(url: final url)) {
-          expect(url, Uri.http(host1, '/'));
+          expect(url, Uri.http(localhost1, '/'));
         }
 
         final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
@@ -342,7 +350,7 @@ void testRedirect(Client Function() clientFactory,
     }
 
     test('scheme-relative cross host redirect', () async {
-      final request = Request('GET', Uri.http(host1, '/scheme-relative'))
+      final request = Request('GET', Uri.http(localhost1, '/scheme-relative'))
         ..followRedirects = true
         ..maxRedirects = 1;
       request.headers['hello'] = 'world';
@@ -358,7 +366,7 @@ void testRedirect(Client Function() clientFactory,
       expect(response.statusCode, 200);
       expect(response.isRedirect, false);
       if (response case BaseResponseWithUrl(url: final url)) {
-        expect(url, Uri.http('127.0.0.1:${Uri.http(host1, '').port}', '/'));
+        expect(url, Uri.http(loopback1, '/'));
       }
 
       final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
@@ -382,10 +390,11 @@ void testRedirect(Client Function() clientFactory,
 
     for (final code in [301, 302, 303]) {
       test('POST $code cross host redirect', () async {
-        final request = Request('POST', Uri.http(host1, '/cross-host-$code'))
-          ..body = 'Hello World!'
-          ..followRedirects = true
-          ..maxRedirects = 1;
+        final request =
+            Request('POST', Uri.http(localhost1, '/cross-host-$code'))
+              ..body = 'Hello World!'
+              ..followRedirects = true
+              ..maxRedirects = 1;
         request.headers['hello'] = 'world';
         request.headers['authorization'] = 'anything';
         if (canSendCookieHeaders) {
@@ -429,7 +438,7 @@ void testRedirect(Client Function() clientFactory,
         if (response.statusCode == 200) {
           expect(response.isRedirect, false);
           if (response case BaseResponseWithUrl(url: final url)) {
-            expect(url, Uri.http('127.0.0.1:${Uri.http(host2, '').port}', '/'));
+            expect(url, Uri.http(loopback2, '/'));
           }
 
           final [server2, method2, body2, h2] =
@@ -447,9 +456,10 @@ void testRedirect(Client Function() clientFactory,
 
     for (final code in [307, 308]) {
       test('GET $code cross host redirect', () async {
-        final request = Request('GET', Uri.http(host1, '/cross-host-$code'))
-          ..followRedirects = true
-          ..maxRedirects = 1;
+        final request =
+            Request('GET', Uri.http(localhost1, '/cross-host-$code'))
+              ..followRedirects = true
+              ..maxRedirects = 1;
         request.headers['hello'] = 'world';
         request.headers['authorization'] = 'anything';
         if (canSendCookieHeaders) {
@@ -464,7 +474,7 @@ void testRedirect(Client Function() clientFactory,
         expect(response.statusCode, 200);
         expect(response.isRedirect, false);
         if (response case BaseResponseWithUrl(url: final url)) {
-          expect(url, Uri.http('127.0.0.1:${Uri.http(host2, '').port}', '/'));
+          expect(url, Uri.http(loopback2, '/'));
         }
 
         final [server1, method1, body1, h1] =
@@ -493,10 +503,11 @@ void testRedirect(Client Function() clientFactory,
       });
 
       test('POST $code cross host redirect', () async {
-        final request = Request('POST', Uri.http(host1, '/cross-host-$code'))
-          ..body = 'Hello World!'
-          ..followRedirects = true
-          ..maxRedirects = 1;
+        final request =
+            Request('POST', Uri.http(localhost1, '/cross-host-$code'))
+              ..body = 'Hello World!'
+              ..followRedirects = true
+              ..maxRedirects = 1;
         request.headers['hello'] = 'world';
         request.headers['authorization'] = 'anything';
         if (canSendCookieHeaders) {
@@ -532,7 +543,7 @@ void testRedirect(Client Function() clientFactory,
         if (response.statusCode == 200) {
           expect(response.isRedirect, false);
           if (response case BaseResponseWithUrl(url: final url)) {
-            expect(url, Uri.http('127.0.0.1:${Uri.http(host2, '').port}', '/'));
+            expect(url, Uri.http(loopback2, '/'));
           }
 
           final [server2, method2, body2, h2] =
