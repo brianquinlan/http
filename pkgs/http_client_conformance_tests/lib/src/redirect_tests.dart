@@ -18,11 +18,16 @@ import 'redirect_server_vm.dart'
 /// If [canSendProxyAuthorizationHeaders] is `false` then tests that require
 /// that "proxy-authorization" headers be set by the client will not be run.
 ///
+/// If [canSetUserInfo] is `false` then tests that require that the request URL
+/// contain userinfo (e.g. `http://user:password@example.com/`) will not be
+/// run.
+///
 /// If [redirectAlwaysAllowed] is `true` then tests that require the [Client]
 /// to limit redirects will be skipped.
 void testRedirect(Client Function() clientFactory,
     {bool canSendCookieHeaders = true,
     bool canSendProxyAuthorizationHeaders = true,
+    bool canSetUserInfo = true,
     bool redirectAlwaysAllowed = false}) {
   group('redirects', () {
     // RFC 9110, 15.4 says:
@@ -394,6 +399,32 @@ void testRedirect(Client Function() clientFactory,
       expect(h3,
           isNot(containsPair('cookie', contains(contains('loopback-cookie')))));
     });
+
+    test('cross host redirect with userinfo', () async {
+      // The client may use the userinfo in the URL to generate an
+      // "authorization" header. If it does, that header must not be sent to
+      // another host.
+      final request = Request(
+          'GET', Uri.parse('http://user:password@$localhost1/cross-host'))
+        ..followRedirects = true
+        ..maxRedirects = 1;
+      final response = await client.send(request);
+      await response.stream.drain<void>();
+      expect(response.statusCode, 200);
+      expect(response.isRedirect, false);
+      if (response case BaseResponseWithUrl(url: final url)) {
+        expect(url, Uri.http(loopback1, '/'));
+      }
+
+      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      expect(server1, 'server1');
+      expect(h1, containsPair('host', [localhost1]));
+
+      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      expect(server2, 'server1');
+      expect(h2, containsPair('host', [loopback1]));
+      expect(h2, isNot(contains('authorization')));
+    }, skip: canSetUserInfo ? false : 'cannot set userinfo');
 
     test('scheme-relative cross host redirect', () async {
       final request = Request('GET', Uri.http(localhost1, '/scheme-relative'))

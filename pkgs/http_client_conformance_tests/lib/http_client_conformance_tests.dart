@@ -70,6 +70,10 @@ export 'src/server_errors_test.dart' show testServerErrors;
 /// If [canSendProxyAuthorizationHeaders] is `false` then tests that require
 /// that "proxy-authorization" headers be set by the client will not be run.
 ///
+/// If [canSetUserInfo] is `false` then tests that require that the request URL
+/// contain userinfo (e.g. `http://user:password@example.com/`) will not be
+/// run.
+///
 /// If [canReceiveSetCookieHeaders] is `false` then tests that require that
 /// "set-cookie" headers be received by the client will not be run.
 ///
@@ -99,6 +103,7 @@ void testAll(
   bool correctlyHandlesNullHeaderValues = true,
   bool canSendCookieHeaders = false,
   bool canSendProxyAuthorizationHeaders = true,
+  bool canSetUserInfo = true,
   bool canReceiveSetCookieHeaders = false,
   bool supportsMultipartRequest = true,
   bool supportsAbort = false,
@@ -120,6 +125,7 @@ void testAll(
   testRedirect(clientFactory,
       canSendCookieHeaders: canSendCookieHeaders,
       canSendProxyAuthorizationHeaders: canSendProxyAuthorizationHeaders,
+      canSetUserInfo: canSetUserInfo,
       redirectAlwaysAllowed: redirectAlwaysAllowed);
   testServerErrors(clientFactory);
   testCompressedResponseBody(clientFactory);

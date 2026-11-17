@@ -16,6 +16,7 @@ void main() {
     canStreamRequestBody: false,
     canStreamResponseBody: true,
     canSendProxyAuthorizationHeaders: false,
+    canSetUserInfo: false,
     canWorkInIsolates: false,
     supportsMultipartRequest: false,
     supportsAbort: true,
