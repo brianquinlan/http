@@ -19,26 +19,27 @@ import 'package:stream_channel/stream_channel.dart';
 ///
 /// `server1` routes:
 ///
-/// | Request path      | Response                                         |
-/// | :---------------- | :----------------------------------------------- |
-/// | `/cross-port`     | `302` -> `http://localhost:<server2.port>/`      |
-/// | `/cross-host`     | `302` -> `http://127.0.0.1:<server1.port>/`      |
-/// | `/cross-host-301` | `301` -> `http://127.0.0.1:<server2.port>/`      |
-/// | `/cross-host-302` | `302` -> `http://127.0.0.1:<server2.port>/`      |
-/// | `/cross-host-303` | `303` -> `http://127.0.0.1:<server2.port>/`      |
-/// | `/cross-ping`     | `302` -> `http://127.0.0.1:<server2.port>/pong`  |
-/// | `/relative`       | `302` -> `/`                                     |
-/// | `/loop`           | `302` -> `http://localhost:<server1.port>/loop`  |
-/// | `/<n>` (n>1)      | `302` -> `http://localhost:<server1.port>/<n-1>` |
-/// | `/1`              | `302` -> `http://localhost:<server1.port>/`      |
-/// | `/`               | `200 OK`                                         |
+/// | Request path       | Response                                         |
+/// | :----------------- | :----------------------------------------------- |
+/// | `/cross-port`      | `302` -> `http://localhost:<server2.port>/`      |
+/// | `/cross-host`      | `302` -> `http://127.0.0.1:<server1.port>/`      |
+/// | `/cross-host-301`  | `301` -> `http://127.0.0.1:<server2.port>/`      |
+/// | `/cross-host-302`  | `302` -> `http://127.0.0.1:<server2.port>/`      |
+/// | `/cross-host-303`  | `303` -> `http://127.0.0.1:<server2.port>/`      |
+/// | `/cross-ping`      | `302` -> `http://127.0.0.1:<server2.port>/pong`  |
+/// | `/relative`        | `302` -> `/`                                     |
+/// | `/scheme-relative` | `302` -> `//127.0.0.1:<server1.port>/`           |
+/// | `/loop`            | `302` -> `http://localhost:<server1.port>/loop`  |
+/// | `/<n>` (n>1)       | `302` -> `http://localhost:<server1.port>/<n-1>` |
+/// | `/1`               | `302` -> `http://localhost:<server1.port>/`      |
+/// | `/`                | `200 OK`                                         |
 ///
 /// `server2` routes:
 ///
-/// | Request path      | Response                                         |
-/// | :---------------- | :----------------------------------------------- |
-/// | `/pong`           | `302` -> `http://localhost:<server1.port>/`      |
-/// | `/`               | `200 OK`                                         |
+/// | Request path       | Response                                         |
+/// | :----------------- | :----------------------------------------------- |
+/// | `/pong`            | `302` -> `http://localhost:<server1.port>/`      |
+/// | `/`                | `200 OK`                                         |
 void hybridMain(StreamChannel<Object?> channel) async {
   late HttpServer server1;
   late HttpServer server2;
@@ -92,6 +93,11 @@ void hybridMain(StreamChannel<Object?> channel) async {
             request.response
               ..statusCode = HttpStatus.found
               ..headers.set('location', '/');
+            unawaited(request.response.close());
+          case 'scheme-relative':
+            request.response
+              ..statusCode = HttpStatus.found
+              ..headers.set('location', '//127.0.0.1:${server1.port}/');
             unawaited(request.response.close());
           case 'loop':
             unawaited(request.response

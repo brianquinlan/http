@@ -341,6 +341,45 @@ void testRedirect(Client Function() clientFactory,
       });
     }
 
+    test('scheme-relative cross host redirect', () async {
+      final request = Request('GET', Uri.http(host1, '/scheme-relative'))
+        ..followRedirects = true
+        ..maxRedirects = 1;
+      request.headers['hello'] = 'world';
+      request.headers['authorization'] = 'anything';
+      if (canSendCookieHeaders) {
+        request.headers['cookie'] = 'foo=bar';
+      }
+      if (canSendProxyAuthorizationHeaders) {
+        request.headers['proxy-authorization'] = 'anything';
+      }
+      final response = await client.send(request);
+      await response.stream.drain<void>();
+      expect(response.statusCode, 200);
+      expect(response.isRedirect, false);
+      if (response case BaseResponseWithUrl(url: final url)) {
+        expect(url, Uri.http('127.0.0.1:${Uri.http(host1, '').port}', '/'));
+      }
+
+      final [server1, _, _, h1] = await httpServerQueue.next as List<Object?>;
+      expect(server1, 'server1');
+      expect(h1, containsPair('hello', ['world']));
+      expect(h1, containsPair('authorization', ['anything']));
+      if (canSendCookieHeaders) {
+        expect(h1, containsPair('cookie', ['foo=bar']));
+      }
+      if (canSendProxyAuthorizationHeaders) {
+        expect(h1, containsPair('proxy-authorization', ['anything']));
+      }
+
+      final [server2, _, _, h2] = await httpServerQueue.next as List<Object?>;
+      expect(server2, 'server1');
+      expect(h2, containsPair('hello', ['world']));
+      expect(h2, isNot(contains('authorization')));
+      expect(h2, isNot(contains('cookie')));
+      expect(h2, isNot(contains('proxy-authorization')));
+    });
+
     for (final code in [301, 302, 303]) {
       test('POST $code cross host redirect', () async {
         final request = Request('POST', Uri.http(host1, '/cross-host-$code'))
