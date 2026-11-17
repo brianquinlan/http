@@ -381,6 +381,14 @@ class CupertinoClient extends BaseClient {
         }
       }
 
+      final hasExplicitCookies =
+          request.headers.containsKey('cookie') ||
+          request.headers.containsKey('cookie2');
+      var stripExplicitCookies = false;
+      if (hasExplicitCookies) {
+        urlRequest.httpShouldHandleCookies = false;
+      }
+
       // This will preserve Apple default headers - is that what we want?
       request.headers.forEach(urlRequest.setValueForHttpHeaderField);
 
@@ -467,22 +475,41 @@ class CupertinoClient extends BaseClient {
             dataController.close();
             _tasks.remove(task.taskIdentifier)!.complete();
           },
-          onRedirect: (session, task, response, request) {
+          onRedirect: (session, task, response, redirectRequest) {
             numRedirects += 1;
             if (numRedirects > maxRedirects) {
               return null;
             }
-            lastRedirectUrl = request.url;
+            final previousUrl = lastRedirectUrl ?? request.url;
+            final nextUrl = redirectRequest.url;
+            var effectiveRequest = redirectRequest;
+            if (hasExplicitCookies) {
+              if (nextUrl != null &&
+                  (nextUrl.scheme != previousUrl.scheme ||
+                      nextUrl.host != previousUrl.host)) {
+                stripExplicitCookies = true;
+              }
+              final mutableRequest = MutableURLRequest.fromUrlRequest(
+                redirectRequest,
+              )..httpShouldHandleCookies = false;
+              if (stripExplicitCookies) {
+                mutableRequest
+                  ..setValueForHttpHeaderField('Cookie', null)
+                  ..setValueForHttpHeaderField('Cookie2', null);
+              }
+              effectiveRequest = mutableRequest;
+            }
+            lastRedirectUrl = nextUrl;
             if (profile != null) {
               profile.responseData.addRedirect(
                 HttpProfileRedirectData(
                   statusCode: response.statusCode,
-                  method: request.httpMethod,
-                  location: request.url!.toString(),
+                  method: effectiveRequest.httpMethod,
+                  location: nextUrl!.toString(),
                 ),
               );
             }
-            return request;
+            return effectiveRequest;
           },
         )
         ..resume();

@@ -52,6 +52,39 @@ void main() {
       expect(request.allHttpHeaderFields!['header'], 'value');
       request.toString(); // Just verify that there is no crash.
     });
+    test('remove', () {
+      request
+        ..setValueForHttpHeaderField('cookie', 'foo=bar')
+        ..setValueForHttpHeaderField('Cookie', null);
+      expect(request.allHttpHeaderFields, isEmpty);
+    });
+  });
+
+  group('fromUrlRequest', () {
+    test('copies request and allows mutation', () {
+      final original = URLRequest.fromUrl(
+        Uri.parse('http://www.example.com/foo'),
+      );
+      final copy = MutableURLRequest.fromUrlRequest(original)
+        ..httpMethod = 'POST'
+        ..setValueForHttpHeaderField('X-Test', '1');
+      expect(original.httpMethod, 'GET');
+      expect(copy.httpMethod, 'POST');
+      expect(copy.allHttpHeaderFields, {'X-Test': '1'});
+    });
+  });
+
+  group('httpShouldHandleCookies', () {
+    final uri = Uri.parse('http://www.example.com/foo?baz=3#bar');
+    late MutableURLRequest request;
+
+    setUp(() => request = MutableURLRequest.fromUrl(uri));
+
+    test('set', () {
+      expect(request.httpShouldHandleCookies, true);
+      request.httpShouldHandleCookies = false;
+      expect(request.httpShouldHandleCookies, false);
+    });
   });
 
   group('body', () {

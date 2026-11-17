@@ -1467,6 +1467,12 @@ class MutableURLRequest extends URLRequest {
     ncb.NSMutableURLRequest.alloc().initWithURL(_uriToNSURL(uri)),
   );
 
+  /// Creates a mutable copy of [request].
+  factory MutableURLRequest.fromUrlRequest(URLRequest request) =>
+      MutableURLRequest._(
+        ncb.NSMutableURLRequest.as(request._nsObject.mutableCopy()),
+      );
+
   set assumesHTTP3Capable(bool value) =>
       _mutableUrlRequest.assumesHTTP3Capable$1 = value;
 
@@ -1488,17 +1494,26 @@ class MutableURLRequest extends URLRequest {
     _mutableUrlRequest.HTTPMethod = method.toNSString();
   }
 
+  /// Whether cookies will automatically be sent with and set for this request.
+  ///
+  /// See [NSMutableURLRequest.HTTPShouldHandleCookies](https://developer.apple.com/documentation/foundation/nsmutableurlrequest/1407655-httpshouldhandlecookies).
+  bool get httpShouldHandleCookies =>
+      _mutableUrlRequest.HTTPShouldHandleCookies;
+
+  set httpShouldHandleCookies(bool value) =>
+      _mutableUrlRequest.HTTPShouldHandleCookies = value;
+
   set timeoutInterval(Duration interval) {
     _mutableUrlRequest.timeoutInterval$1 =
         interval.inMicroseconds.toDouble() / Duration.microsecondsPerSecond;
   }
 
-  /// Set the value of a header field.
+  /// Set the value of a header field, or remove it if [field] is `null`.
   ///
   /// See [NSMutableURLRequest setValue:forHTTPHeaderField:](https://developer.apple.com/documentation/foundation/nsmutableurlrequest/1408793-setvalue)
-  void setValueForHttpHeaderField(String value, String field) {
+  void setValueForHttpHeaderField(String value, String? field) {
     _mutableUrlRequest.setValue(
-      field.toNSString(),
+      field?.toNSString(),
       forHTTPHeaderField: value.toNSString(),
     );
   }

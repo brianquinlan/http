@@ -399,12 +399,17 @@ class OkHttpClient extends BaseClient {
             followRedirects, bindings.RedirectReceivedCallback.implement(
                 bindings.$RedirectReceivedCallback(
           onRedirectReceived: (response, newLocation) {
+            final statusCode = response.code();
+            var method =
+                response.request().method().toDartString(releaseOriginal: true);
+            if (((statusCode == 301 || statusCode == 302) &&
+                    method == 'POST') ||
+                (statusCode == 303 && method != 'GET' && method != 'HEAD')) {
+              method = 'GET';
+            }
             profile?.responseData.addRedirect(HttpProfileRedirectData(
-              statusCode: response.code(),
-              method: response
-                  .request()
-                  .method()
-                  .toDartString(releaseOriginal: true),
+              statusCode: statusCode,
+              method: method,
               location: newLocation.toDartString(releaseOriginal: true),
             ));
           },

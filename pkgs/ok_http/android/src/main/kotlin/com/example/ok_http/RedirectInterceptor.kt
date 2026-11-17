@@ -13,6 +13,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import java.io.IOException
+import java.net.ProtocolException
 
 /**
  * Callback interface utilized by the [RedirectInterceptor].
@@ -48,15 +49,48 @@ class RedirectInterceptor {
                 var redirectCount = 0
 
                 while (response.isRedirect && followRedirects) {
+                    val location = response.header("location") ?: break
+                    val newUrl = req.url.resolve(location) ?: run {
+                        response.close()
+                        throw ProtocolException("Unsupported or invalid redirect location: $location")
+                    }
+
                     if (redirectCount >= maxRedirects) {
+                        response.close()
                         throw IOException("Redirect limit exceeded")
                     }
 
-                    val location = response.header("location") ?: break
+                    val builder = req.newBuilder().url(newUrl)
+                    val code = response.code
+                    val method = req.method
+                    if (((code == 301 || code == 302) && method == "POST") ||
+                        (code == 303 && method != "GET" && method != "HEAD")
+                    ) {
+                        builder.method("GET", null)
+                        builder.removeHeader("Transfer-Encoding")
+                        builder.removeHeader("Content-Length")
+                        builder.removeHeader("Content-Type")
+                        builder.removeHeader("Content-Encoding")
+                        builder.removeHeader("Content-Language")
+                        builder.removeHeader("Content-Location")
+                    }
 
-                    redirectCallback.onRedirectReceived(response, location)
+                    if (newUrl.scheme != req.url.scheme ||
+                        newUrl.host != req.url.host ||
+                        newUrl.port != req.url.port
+                    ) {
+                        builder.removeHeader("Authorization")
+                        builder.removeHeader("WWW-Authenticate")
+                        builder.removeHeader("Proxy-Authorization")
+                        builder.removeHeader("Proxy-Authenticate")
+                        builder.removeHeader("Cookie")
+                        builder.removeHeader("Cookie2")
+                        builder.removeHeader("Host")
+                    }
 
-                    req = req.newBuilder().url(location).build()
+                    redirectCallback.onRedirectReceived(response, newUrl.toString())
+
+                    req = builder.build()
                     response.close()
                     response = chain.proceed(req)
                     redirectCount++

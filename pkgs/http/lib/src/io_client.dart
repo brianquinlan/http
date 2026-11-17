@@ -222,6 +222,11 @@ class IOClient extends BaseClient {
         headers[key] = values.map((value) => value.trimRight()).join(',');
       });
 
+      var url = request.url;
+      for (final redirect in response.redirects) {
+        url = url.resolveUri(redirect.location);
+      }
+
       return _IOStreamedResponseV2(
         responseController.stream,
         response.statusCode,
@@ -230,9 +235,7 @@ class IOClient extends BaseClient {
         request: request,
         headers: headers,
         isRedirect: response.isRedirect,
-        url: response.redirects.isNotEmpty
-            ? response.redirects.last.location
-            : request.url,
+        url: url,
         persistentConnection: response.persistentConnection,
         reasonPhrase: response.reasonPhrase,
         inner: response,
